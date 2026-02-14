@@ -20,6 +20,8 @@ An interactive PowerShell automation tool that executes workflows defined in JSO
 
 ## Configuration
 
+I recommend taking a look at steps/steps.schema.json.
+
 **Basic Structure:**
 
 ```json
@@ -157,11 +159,11 @@ Placeholders work in: `question`, `options`, `command`, `target`, `value`, `sour
         {
           "type": "copy",
           "source": "./template",
-          "destination": "./out/[[[ANS:name]]]"
+          "destination": "./out/[[[ANS:project_name]]]"
         },
         {
           "type": "replace",
-          "files": ["./out/[[[ANS:name]]]"],
+          "files": ["./out/[[[ANS:project_name]]]"],
           "target": "[[[NAME]]]",
           "value": "[[[ANS:project_name]]]"
         }
@@ -222,6 +224,7 @@ For developers and AI agents, see [AGENTS.md](AGENTS.md) for architecture, codin
 ## License
 
 MIT
+
 
 
 
