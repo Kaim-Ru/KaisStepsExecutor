@@ -1,15 +1,5 @@
 {
   "steps": [
-    // Array of steps. Executed from top to bottom.
-    {
-      // Execute action directly without questions
-      "actions": [
-        {
-          "type": "execute",
-          "command": "git init"
-        }
-      ]
-    },
     {
       "question_id": "framework",
       "question": "Which framework do you want to use?",
@@ -43,12 +33,12 @@
         {
           "type": "copy", // Copy file or folder.
           "source": "D:/AddonDevelopment/psteset12/template/aaa", // Source file or folder. Both absolute and relative paths supported.
-          "destination": "./" // Destination folder. Both absolute and relative paths supported.
+          "destination": "./my_aaa" // Destination file or folder name. If ends with /, copies into that directory. Otherwise, copies with this exact name.
         },
         {
           "type": "symlink", // Create symbolic link.
           "source": "./template/bbb", // Link source file or folder. Both absolute and relative paths supported.
-          "destination": "./" // Link destination file or folder. Both absolute and relative paths supported.
+          "destination": "./my_bbb" // Link destination name. If ends with /, creates link inside that directory. Otherwise, creates link with this exact name.
         }
       ]
     }

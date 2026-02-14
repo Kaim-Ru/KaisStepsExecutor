@@ -322,9 +322,17 @@ function Invoke-CopyAction {
         throw "Copy source not found: $source"
     }
     
-    # If source is a directory and destination is also a directory,
-    # copy the folder itself (not just its contents)
-    if ((Test-Path $source -PathType Container) -and (Test-Path $destination -PathType Container)) {
+    # If destination ends with / or \, treat it as a directory
+    # and copy the source into it with its original name
+    if ($Action.destination -match '[\\/]$') {
+        if (Test-Path $source -PathType Container) {
+            $folderName = Split-Path -Leaf $source
+            $destination = Join-Path $destination $folderName
+        }
+    }
+    # Otherwise, if destination exists as a directory (and source is also a directory),
+    # copy into that directory
+    elseif ((Test-Path $source -PathType Container) -and (Test-Path $destination -PathType Container)) {
         $folderName = Split-Path -Leaf $source
         $destination = Join-Path $destination $folderName
     }
@@ -364,8 +372,14 @@ function Invoke-SymlinkAction {
         throw "Symlink source not found: $source"
     }
     
-    # If destination is a directory, create symlink inside it
-    if (Test-Path $destination -PathType Container) {
+    # If destination ends with / or \, treat it as a directory
+    # and create symlink inside it with the source's original name
+    if ($Action.destination -match '[\\/]$') {
+        $linkName = Split-Path -Leaf $source
+        $destination = Join-Path $destination $linkName
+    }
+    # Otherwise, if destination exists as a directory, create symlink inside it
+    elseif (Test-Path $destination -PathType Container) {
         $linkName = Split-Path -Leaf $source
         $destination = Join-Path $destination $linkName
     }
