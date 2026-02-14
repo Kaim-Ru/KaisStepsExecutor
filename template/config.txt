@@ -1,0 +1,4 @@
+Project name: aaa
+Configuration file
+
+This file is used for symbolic link testing.
