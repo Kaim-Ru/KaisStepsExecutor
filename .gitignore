@@ -1,1 +1,4 @@
 out
+steps
+templates/*
+!templates/feeling.txt
