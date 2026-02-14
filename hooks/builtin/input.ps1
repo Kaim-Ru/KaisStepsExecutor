@@ -1,6 +1,6 @@
 # Input type: input (text input)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Get-UserInput {
     param(

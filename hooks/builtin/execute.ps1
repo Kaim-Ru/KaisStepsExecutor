@@ -1,6 +1,6 @@
 # Action type: execute (run PowerShell command)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Invoke-ExecuteAction {
     param(

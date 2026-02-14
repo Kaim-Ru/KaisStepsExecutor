@@ -1,4 +1,6 @@
 out
-steps
+steps/*
+!steps/example.steps.json
+!steps/steps.schema.json
 templates/*
 !templates/feeling.txt

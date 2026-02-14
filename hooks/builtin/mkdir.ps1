@@ -1,7 +1,7 @@
 # Action type: mkdir (create directory)
 # Example custom hook
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Invoke-MkdirAction {
     param(

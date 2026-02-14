@@ -1,5 +1,6 @@
 param(
-    [string]$StepPath = "steps.json"
+    [Parameter(Mandatory=$true)]
+    [string]$StepPath
 )
 
 # Load common utilities
@@ -56,6 +57,37 @@ function Test-Conditions {
     return $true
 }
 
+function Find-HookFile {
+    param(
+        [string]$HookName
+    )
+    
+    # Priority 1: Try builtin directory (hooks/builtin/hookname.ps1)
+    $builtinPath = "$PSScriptRoot/hooks/builtin/$HookName.ps1"
+    if (Test-Path $builtinPath) {
+        return $builtinPath
+    }
+    
+    # Priority 2: Try direct path (hooks/hookname.ps1) for backward compatibility
+    $directPath = "$PSScriptRoot/hooks/$HookName.ps1"
+    if (Test-Path $directPath) {
+        return $directPath
+    }
+    
+    # Priority 3: Search recursively in hooks/ for custom hooks
+    $foundFiles = Get-ChildItem -Path "$PSScriptRoot/hooks" -Filter "$HookName.ps1" -Recurse -File -ErrorAction SilentlyContinue
+    
+    if ($foundFiles.Count -eq 0) {
+        return $null
+    }
+    
+    if ($foundFiles.Count -gt 1) {
+        Write-Host "  [Warning] Multiple hook files found for '$HookName'. Using first match: $($foundFiles[0].FullName)" -ForegroundColor Yellow
+    }
+    
+    return $foundFiles[0].FullName
+}
+
 # Main script
 try {
     if (-not (Test-Path $StepPath)) {
@@ -83,9 +115,9 @@ try {
             $stepType = if ($step.input_type) { $step.input_type } else { "input" }
             
             # Load input type hook
-            $hookPath = "$PSScriptRoot/hooks/$stepType.ps1"
-            if (-not (Test-Path $hookPath)) {
-                Write-Host "  [Warning] Hook not found for input type '$stepType': $hookPath" -ForegroundColor Yellow
+            $hookPath = Find-HookFile -HookName $stepType
+            if (-not $hookPath) {
+                Write-Host "  [Warning] Hook not found for input type '$stepType'" -ForegroundColor Yellow
                 Write-Host "  Skipping this question." -ForegroundColor Yellow
                 continue
             }
@@ -121,9 +153,9 @@ try {
                 }
                 
                 # Load action type hook
-                $hookPath = "$PSScriptRoot/hooks/$($action.type).ps1"
-                if (-not (Test-Path $hookPath)) {
-                    Write-Host "  [Warning] Hook not found for action type '$($action.type)': $hookPath" -ForegroundColor Yellow
+                $hookPath = Find-HookFile -HookName $action.type
+                if (-not $hookPath) {
+                    Write-Host "  [Warning] Hook not found for action type '$($action.type)'" -ForegroundColor Yellow
                     Write-Host "  Skipping this action." -ForegroundColor Yellow
                     continue
                 }

@@ -1,7 +1,7 @@
 # Input type: multiselect (multiple selection from options)
 # Example custom hook
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Get-UserInput {
     param(

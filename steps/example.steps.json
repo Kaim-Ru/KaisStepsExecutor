@@ -15,6 +15,11 @@
         {
           "type": "copy",
           "source": "./templates/feeling.txt",
+          "destination": "%AppData%/aaa/[[[ANS:project_name]]]/feeling.txt"
+        },
+        {
+          "type": "copy",
+          "source": "./templates/feeling.txt",
           "destination": "./out/[[[ANS:project_name]]]/feeling.txt"
         },
         {

@@ -1,6 +1,6 @@
 # Action type: symlink (create symbolic link)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Invoke-SymlinkAction {
     param(

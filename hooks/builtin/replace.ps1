@@ -1,6 +1,6 @@
 # Action type: replace (string replacement in files)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Invoke-ReplaceAction {
     param(

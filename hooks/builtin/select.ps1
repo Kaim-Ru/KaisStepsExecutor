@@ -1,6 +1,6 @@
 # Input type: select (single selection from options)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Get-UserInput {
     param(

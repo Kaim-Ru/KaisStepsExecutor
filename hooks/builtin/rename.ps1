@@ -1,6 +1,6 @@
 # Action type: rename (rename files by replacing target string in filename)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Invoke-RenameAction {
     param(

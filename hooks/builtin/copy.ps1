@@ -1,6 +1,6 @@
 # Action type: copy (copy file or folder)
 
-. "$PSScriptRoot/common.ps1"
+. "$PSScriptRoot/../common.ps1"
 
 function Copy-DirectoryRecursive {
     param(

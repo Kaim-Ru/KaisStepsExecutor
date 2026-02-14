@@ -4,7 +4,7 @@
 
 ### Purpose
 
-This is an **interactive project setup automation tool** that executes predefined steps from a JSON configuration file (`steps.json`). The system asks users questions, processes their answers, and performs various file operations and command executions based on conditional logic.
+This is an **interactive project setup automation tool** that executes predefined steps from a JSON configuration file (`*.steps.json`). The system asks users questions, processes their answers, and performs various file operations and command executions based on conditional logic.
 
 **Key Features:**
 
@@ -31,23 +31,25 @@ This is an **interactive project setup automation tool** that executes predefine
 
 ```
 generator.ps1          # Main entry point - orchestrates the workflow
-steps.json            # Configuration file defining the workflow
+steps/*.steps.json    # Configuration files defining workflows
 hooks/                # Hook scripts directory
   ├── common.ps1      # Shared utilities (Invoke-Replacement function)
-  ├── input.ps1       # Input type: text input
-  ├── select.ps1      # Input type: single selection
-  ├── multiselect.ps1 # Input type: multiple selection
-  ├── execute.ps1     # Action: execute PowerShell commands
-  ├── replace.ps1     # Action: string replacement in files
-  ├── copy.ps1        # Action: copy files/folders
-  ├── symlink.ps1     # Action: create symbolic links
-  └── mkdir.ps1       # Action: create directories
-template/             # Optional template files directory
+  └── builtin/        # Built-in hooks
+      ├── input.ps1       # Input type: text input
+      ├── select.ps1      # Input type: single selection
+      ├── multiselect.ps1 # Input type: multiple selection
+      ├── execute.ps1     # Action: execute PowerShell commands
+      ├── replace.ps1     # Action: string replacement in files
+      ├── copy.ps1        # Action: copy files/folders
+      ├── rename.ps1      # Action: rename files
+      ├── symlink.ps1     # Action: create symbolic links
+      └── mkdir.ps1       # Action: create directories
+templates/            # Optional template files directory
 ```
 
 ### Execution Flow
 
-1. **Load Configuration**: `generator.ps1` loads and parses `steps.json`
+1. **Load Configuration**: `generator.ps1` loads and parses `*.steps.json`
 2. **Process Steps Sequentially**: Each step is processed in order
 3. **Ask Question**: If `question_id` exists, load the appropriate input hook and get user input
 4. **Store Answer**: Save the answer in `$answers` hashtable
@@ -112,7 +114,7 @@ When working with this project:
 
 1. **Read this file** to understand the overall architecture
 2. **Review relevant skills** based on your task
-3. **Check existing examples** in `steps.json` and `hooks/`
+3. **Check existing examples** in `steps/*.steps.json` and `hooks/builtin/`
 4. **Test your changes** using test configuration files
 5. **Follow conventions** strictly to maintain consistency
 
@@ -120,6 +122,8 @@ When working with this project:
 
 - Do NOT modify `generator.ps1` unless fixing core bugs
 - Do NOT modify existing hooks unless fixing bugs - create new ones instead
+- Place new workflow configuration files in `steps/` directory
+- Name workflow files with `*.steps.json` format (e.g., `myworkflow.steps.json`)
 - Always use `Invoke-Replacement` for placeholder processing
 - Always source `hooks/common.ps1` in hook files
 - Test thoroughly before committing changes
@@ -131,8 +135,8 @@ When working with this project:
 ```
 project/
 ├── generator.ps1                 # Main script (DO NOT MODIFY)
-├── steps.json                    # Configuration file
-├── README.md                     # User documentation
+├── README.md                     # User documentation (English)
+├── README.ja.md                  # User documentation (Japanese)
 ├── AGENTS.md                     # This file
 ├── .github/
 │   └── skills/                   # Agent skills documentation
@@ -145,15 +149,20 @@ project/
 │       └── debugging-and-testing/
 ├── hooks/
 │   ├── common.ps1               # Shared utilities
-│   ├── input.ps1                # Input type: text input
-│   ├── select.ps1               # Input type: selection
-│   ├── multiselect.ps1          # Input type: multiple selection
-│   ├── execute.ps1              # Action: execute commands
-│   ├── replace.ps1              # Action: replace in files
-│   ├── copy.ps1                 # Action: copy files/folders
-│   ├── symlink.ps1              # Action: create symlinks
-│   └── mkdir.ps1                # Action: create directories
-└── template/                     # Optional template directory
+│   └── builtin/                 # Built-in action and input types
+│       ├── input.ps1            # Input type: text input
+│       ├── select.ps1           # Input type: selection
+│       ├── multiselect.ps1      # Input type: multiple selection
+│       ├── execute.ps1          # Action: execute commands
+│       ├── replace.ps1          # Action: replace in files
+│       ├── copy.ps1             # Action: copy files/folders
+│       ├── rename.ps1           # Action: rename files
+│       ├── symlink.ps1          # Action: create symlinks
+│       └── mkdir.ps1            # Action: create directories
+├── steps/
+│   ├── example.steps.json       # Example workflow configuration
+│   └── steps.schema.json        # JSON schema for validation
+└── templates/                    # Optional template files directory
 ```
 
 **For detailed information on specific tasks, refer to the appropriate skill documentation in `.github/skills/`.**
