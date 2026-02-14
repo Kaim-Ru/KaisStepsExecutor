@@ -1,5 +1,5 @@
 {
-  "$schema": "./steps.json.schema",
+  "$schema": "./steps.schema.json",
   "steps": [
     {
       "question_id": "greeting",

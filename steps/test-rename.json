@@ -1,0 +1,64 @@
+{
+  "$schema": "../steps.schema.json",
+  "steps": [
+    {
+      "question_id": "module_name",
+      "question": "モジュール名を入力してください",
+      "input_type": "input"
+    },
+    {
+      "question_id": "author_name",
+      "question": "作成者名を入力してください",
+      "input_type": "input",
+      "actions": [
+        {
+          "type": "mkdir",
+          "path": "./out/test-rename"
+        },
+        {
+          "type": "copy",
+          "source": "./templates/__MODULE_NAME__.js",
+          "destination": "./out/test-rename/__MODULE_NAME__.js"
+        },
+        {
+          "type": "copy",
+          "source": "./templates/__MODULE_NAME__.test.js",
+          "destination": "./out/test-rename/__MODULE_NAME__.test.js"
+        },
+        {
+          "type": "copy",
+          "source": "./templates/README___AUTHOR_NAME__.md",
+          "destination": "./out/test-rename/README___AUTHOR_NAME__.md"
+        },
+        {
+          "type": "replace",
+          "files": {
+            "include": ["./out/test-rename/*"]
+          },
+          "target": "__MODULE_NAME__",
+          "value": "[[[ANS:module_name]]]"
+        },
+        {
+          "type": "replace",
+          "files": {
+            "include": ["./out/test-rename/*"]
+          },
+          "target": "__AUTHOR_NAME__",
+          "value": "[[[ANS:author_name]]]"
+        }
+      ]
+    },
+    {
+      "actions": [
+        {
+          "type": "rename",
+          "files": "./out/test-rename/*"
+        },
+        {
+          "type": "execute",
+          "command": "Write-Host '完了！ファイル一覧:' -ForegroundColor Cyan; Get-ChildItem ./out/test-rename | ForEach-Object { Write-Host \"  - $($_.Name)\" -ForegroundColor Green }"
+        }
+      ]
+    }
+  ]
+}

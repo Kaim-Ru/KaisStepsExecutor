@@ -22,6 +22,9 @@ function Invoke-Replacement {
         $result = $result.Substring(0, $index) + $newUUID + $result.Substring($index + "[[[UUIDv4]]]".Length)
     }
     
+    # Expand environment variables like %AppData%, %USERPROFILE%, etc.
+    $result = [Environment]::ExpandEnvironmentVariables($result)
+    
     # Unescape \\[[[ to \[[[ and then \[[[ to [[[
     # In JSON, \\[[[ becomes \[[[ after parsing
     # We need to unescape \[[[ to [[[

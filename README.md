@@ -80,9 +80,19 @@ An interactive PowerShell automation tool that executes workflows defined in JSO
    ```
 
 5. **mkdir** - Create directory
+
    ```json
    { "type": "mkdir", "path": "./[[[ANS:project_name]]]/src" }
    ```
+
+6. **rename** - Rename files by replacing placeholders in filenames
+
+   ```json
+   { "type": "rename", "files": "./template/*[[[ANS:module_name]]]*" }
+   ```
+
+   - `files`: File pattern (glob format)
+   - Automatically replaces `[[[...]]]` placeholders in filenames
 
 **Conditions:**
 
@@ -158,7 +168,7 @@ All input types and actions are **hooks** in `./hooks/`:
 **Built-in:**
 
 - Input: `input.ps1`, `select.ps1`, `multiselect.ps1`
-- Actions: `execute.ps1`, `replace.ps1`, `copy.ps1`, `symlink.ps1`, `mkdir.ps1`
+- Actions: `execute.ps1`, `replace.ps1`, `copy.ps1`, `symlink.ps1`, `mkdir.ps1`, `rename.ps1`
 
 **Custom Hook:**
 

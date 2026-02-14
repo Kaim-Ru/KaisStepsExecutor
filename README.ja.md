@@ -80,9 +80,19 @@ JSONで定義されたワークフローを実行するインタラクティブ�
    ```
 
 5. **mkdir** - ディレクトリを作成
+
    ```json
    { "type": "mkdir", "path": "./[[[ANS:project_name]]]/src" }
    ```
+
+6. **rename** - ファイル名のプレースホルダーを置換
+
+   ```json
+   { "type": "rename", "files": "./template/*[[[ANS:module_name]]]*" }
+   ```
+
+   - `files`: ファイルパターン（glob形式）
+   - ファイル名に含まれる `[[[...]]]` プレースホルダーを自動的に置換します
 
 **条件:**
 
@@ -156,7 +166,7 @@ JSONで定義されたワークフローを実行するインタラクティブ�
 **組み込み:**
 
 - 入力: `input.ps1`、`select.ps1`、`multiselect.ps1`
-- アクション: `execute.ps1`、`replace.ps1`、`copy.ps1`、`symlink.ps1`、`mkdir.ps1`
+- アクション: `execute.ps1`、`replace.ps1`、`copy.ps1`、`symlink.ps1`、`mkdir.ps1`、`rename.ps1`
 
 **カスタムフック:**
 

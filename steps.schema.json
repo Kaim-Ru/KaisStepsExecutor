@@ -50,7 +50,8 @@
               { "$ref": "#/definitions/replaceAction" },
               { "$ref": "#/definitions/copyAction" },
               { "$ref": "#/definitions/symlinkAction" },
-              { "$ref": "#/definitions/mkdirAction" }
+              { "$ref": "#/definitions/mkdirAction" },
+              { "$ref": "#/definitions/renameAction" }
             ]
           }
         }
@@ -299,6 +300,28 @@
         "path": {
           "type": "string",
           "description": "Directory path to create (absolute or relative). Supports placeholders"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "renameAction": {
+      "type": "object",
+      "description": "Rename files by replacing placeholders in filenames",
+      "required": ["type", "files"],
+      "properties": {
+        "type": {
+          "const": "rename"
+        },
+        "files": {
+          "type": "string",
+          "description": "File pattern (glob) to match files to rename. Supports wildcards and placeholders"
         },
         "conditions": {
           "type": "array",
