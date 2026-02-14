@@ -168,9 +168,50 @@ function Invoke-ReplaceAction {
     $target = Invoke-Replacement -Text $Action.target -Answers $Answers
     $value = Invoke-Replacement -Text $Action.value -Answers $Answers
     
+    # Process files (support both array and object format)
+    $filePatterns = @()
+    
+    if ($Action.files -is [array]) {
+        # Legacy array format
+        $filePatterns = $Action.files
+    } elseif ($Action.files -is [PSCustomObject] -or $Action.files -is [hashtable]) {
+        # New object format
+        if ($Action.files.include) {
+            foreach ($pattern in $Action.files.include) {
+                $filePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
+            }
+        }
+        
+        if ($Action.files.exclude) {
+            foreach ($pattern in $Action.files.exclude) {
+                $excludePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
+            }
+        }
+    }
+    
+    # Helper function to check if file should be processed
+    $shouldProcessFile = {
+        param([string]$FilePath)
+        
+        # Normalize path separators
+        $normalizedPath = $FilePath -replace '\\', '/'
+        
+        # Check exclude patterns
+        if ($excludePatterns.Count -gt 0) {
+            foreach ($pattern in $excludePatterns) {
+                $normalizedPattern = $pattern -replace '\\', '/'
+                if ($normalizedPath -like "*$normalizedPattern*" -or $normalizedPath -like $normalizedPattern) {
+                    return $false
+                }
+            }
+        }
+        
+        return $true
+    }
+    
     $filesProcessed = 0
     
-    foreach ($filePattern in $Action.files) {
+    foreach ($filePattern in $filePatterns) {
         # Process placeholders in file pattern
         $filePattern = Invoke-Replacement -Text $filePattern -Answers $Answers
         
@@ -200,6 +241,8 @@ function Invoke-ReplaceAction {
                 if (Test-Path $basePath) {
                     Get-ChildItem -Path $basePath -Recurse -File | Where-Object {
                         $_.FullName -like "*$includePattern"
+                    } | Where-Object {
+                        & $shouldProcessFile $_.FullName
                     } | ForEach-Object {
                         $content = Get-Content -Path $_.FullName -Raw -Encoding UTF8
                         if ($content -and $content.Contains($target)) {
@@ -213,7 +256,9 @@ function Invoke-ReplaceAction {
                     }
                 }
             } elseif (Test-Path $parentPath) {
-                Get-ChildItem -Path $parentPath -Filter $pattern -Recurse:$recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                Get-ChildItem -Path $parentPath -Filter $pattern -Recurse:$recurse -File -ErrorAction SilentlyContinue | Where-Object {
+                    & $shouldProcessFile $_.FullName
+                } | ForEach-Object {
                     $content = Get-Content -Path $_.FullName -Raw -Encoding UTF8
                     if ($content -and $content.Contains($target)) {
                         $newContent = $content.Replace($target, $value)
@@ -227,7 +272,7 @@ function Invoke-ReplaceAction {
             }
         } else {
             # Direct file path
-            if (Test-Path $resolvedPath) {
+            if ((Test-Path $resolvedPath) -and (& $shouldProcessFile $resolvedPath)) {
                 $content = Get-Content -Path $resolvedPath -Raw -Encoding UTF8
                 if ($content -and $content.Contains($target)) {
                     $newContent = $content.Replace($target, $value)
@@ -238,7 +283,9 @@ function Invoke-ReplaceAction {
                     $filesProcessed++
                 }
             } else {
-                Write-Host "    ⚠ File not found: $resolvedPath" -ForegroundColor Yellow
+                if (-not (Test-Path $resolvedPath)) {
+                    Write-Host "    ⚠ File not found: $resolvedPath" -ForegroundColor Yellow
+                }
             }
         }
     }
@@ -345,7 +392,7 @@ try {
     $answers = @{}
     
     Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "            KaisStepsExecutor" -ForegroundColor Cyan
+    Write-Host "  　　　　　 KaisStepsExecutor" -ForegroundColor Cyan
     Write-Host "==========================================" -ForegroundColor Cyan
     Write-Host ""
     
@@ -427,13 +474,13 @@ try {
     }
     
     Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "  ✓ All steps completed successfully!" -ForegroundColor Green
+    Write-Host "   ✓ All steps completed successfully!" -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Cyan
     
 } catch {
     Write-Host ""
     Write-Host "==========================================" -ForegroundColor Red
-    Write-Host "  ✗ An error occurred" -ForegroundColor Red
+    Write-Host "           ✗ An error occurred" -ForegroundColor Red
     Write-Host "==========================================" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Red

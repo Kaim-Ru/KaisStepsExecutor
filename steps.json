@@ -24,7 +24,10 @@
         // All actions below. Executed from top to bottom.
         {
           "type": "replace", // Replace target with value.
-          "files": ["./template/**/*.txt"], // Files to replace. Multiple files can be specified. Wildcards supported. Both absolute and relative paths supported.
+          "files": {
+            "include": ["./template/**/*.txt"], // Files to replace. Multiple files can be specified. Wildcards supported. Both absolute and relative paths supported.
+            "exclude": [] // Optional: Files to exclude. Wildcards supported.
+          },
           "target": "[[[PROJECT_NAME]]]", // String to be replaced. Must be enclosed in [[[]]]
           "value": "[[[ANS:project_name]]]" // Replacement value. [[[ANS:id]]] references the answer. [[[UUIDv4]]] generates and references a UUIDv4.
         },
