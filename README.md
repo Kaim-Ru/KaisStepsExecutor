@@ -115,7 +115,7 @@ I recommend taking a look at steps/steps.schema.json.
    ```
 
    - `files`: Patterns (array or `{include: [...], exclude: [...]}`)
-   - `target`: String to replace in filenames (supports placeholders)
+   - `target`: String to replace in filenames
    - `value`: Replacement string (supports placeholders)
 
    Example: `[[[MODULE]]].js` → `mymodule.js` when `module_name` = `mymodule`

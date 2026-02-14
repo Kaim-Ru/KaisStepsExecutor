@@ -115,7 +115,7 @@ steps/steps.schema.json を確認することをお勧めします。
    ```
 
    - `files`: パターン（配列または `{include: [...], exclude: [...]}`）
-   - `target`: ファイル名内で置換する文字列（プレースホルダー使用可）
+   - `target`: ファイル名内で置換する文字列
    - `value`: 置換後の文字列（プレースホルダー使用可）
 
    例: `[[[MODULE]]].js` → `mymodule.js`（`module_name` が `mymodule` の場合）
