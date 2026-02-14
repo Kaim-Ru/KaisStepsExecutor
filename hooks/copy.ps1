@@ -39,44 +39,80 @@ function Invoke-CopyAction {
     
     Write-Host "  [Copy] Copying file/folder..." -ForegroundColor Cyan
     
-    # Process placeholders in paths
-    $source = Invoke-Replacement -Text $Action.source -Answers $Answers
+    # Process destination placeholder
     $destination = Invoke-Replacement -Text $Action.destination -Answers $Answers
     
-    # Resolve paths
-    if (-not [System.IO.Path]::IsPathRooted($source)) {
-        $source = Join-Path (Get-Location) $source
-    }
+    # Resolve destination path
     if (-not [System.IO.Path]::IsPathRooted($destination)) {
         $destination = Join-Path (Get-Location) $destination
     }
     
-    if (-not (Test-Path $source)) {
-        Write-Host "    ✗ Source not found: $source" -ForegroundColor Red
-        throw "Copy source not found: $source"
+    # Check if source is an array
+    $sources = if ($Action.source -is [array]) {
+        $Action.source
+    } else {
+        @($Action.source)
     }
     
-    # If destination ends with / or \, treat it as a directory
-    # and copy the source into it with its original name
-    if ($Action.destination -match '[\\/]$') {
-        if (Test-Path $source -PathType Container) {
+    $copiedCount = 0
+    $failedCount = 0
+    
+    foreach ($sourcePath in $sources) {
+        # Process placeholders in source path
+        $source = Invoke-Replacement -Text $sourcePath -Answers $Answers
+        
+        # Resolve source path
+        if (-not [System.IO.Path]::IsPathRooted($source)) {
+            $source = Join-Path (Get-Location) $source
+        }
+        
+        if (-not (Test-Path $source)) {
+            Write-Host "    ✗ Source not found: $source" -ForegroundColor Red
+            $failedCount++
+            continue
+        }
+        
+        # Determine final destination path
+        $finalDestination = $destination
+        
+        # If destination ends with / or \, treat it as a directory
+        # and copy the source into it with its original name
+        if ($Action.destination -match '[\\/]$') {
+            if (Test-Path $source -PathType Container) {
+                $folderName = Split-Path -Leaf $source
+                $finalDestination = Join-Path $destination $folderName
+            }
+        }
+        # Otherwise, if destination exists as a directory (and source is also a directory),
+        # copy into that directory
+        elseif ((Test-Path $source -PathType Container) -and (Test-Path $destination -PathType Container)) {
             $folderName = Split-Path -Leaf $source
-            $destination = Join-Path $destination $folderName
+            $finalDestination = Join-Path $destination $folderName
+        }
+        # If multiple sources and destination is a directory, copy each source into it
+        elseif ($sources.Count -gt 1 -and (Test-Path $destination -PathType Container)) {
+            $itemName = Split-Path -Leaf $source
+            $finalDestination = Join-Path $destination $itemName
+        }
+        
+        try {
+            Copy-DirectoryRecursive -Source $source -Destination $finalDestination
+            Write-Host "    ✓ $source -> $finalDestination" -ForegroundColor Green
+            $copiedCount++
+        } catch {
+            Write-Host "    ✗ Copy failed: $source -> $finalDestination" -ForegroundColor Red
+            Write-Host "      Error: $_" -ForegroundColor Red
+            $failedCount++
         }
     }
-    # Otherwise, if destination exists as a directory (and source is also a directory),
-    # copy into that directory
-    elseif ((Test-Path $source -PathType Container) -and (Test-Path $destination -PathType Container)) {
-        $folderName = Split-Path -Leaf $source
-        $destination = Join-Path $destination $folderName
-    }
     
-    try {
-        Copy-DirectoryRecursive -Source $source -Destination $destination
-        Write-Host "    ✓ $source -> $destination" -ForegroundColor Green
-        Write-Host "  ✓ Copy completed" -ForegroundColor Green
-    } catch {
-        Write-Host "    ✗ Copy failed: $_" -ForegroundColor Red
-        throw
+    # Summary
+    if ($failedCount -gt 0) {
+        Write-Host "  ✓ Copy completed: $copiedCount succeeded, $failedCount failed" -ForegroundColor Yellow
+        if ($copiedCount -eq 0) {
+            throw "All copy operations failed"
+        }
+    } else {
+        Write-Host "  ✓ Copy completed: $copiedCount file(s)/folder(s)" -ForegroundColor Green
     }
 }

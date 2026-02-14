@@ -73,6 +73,23 @@ An interactive PowerShell automation tool that executes workflows defined in JSO
    { "type": "copy", "source": "./template", "destination": "./output/" }
    ```
 
+   - `source`: String or array of strings (copy multiple files/folders at once)
+   - `destination`: Destination path
+
+   **Multiple sources example:**
+
+   ```json
+   {
+     "type": "copy",
+     "source": [
+       "./templates/config.json",
+       "./templates/[[[ANS:module_name]]].js",
+       "./templates/styles.css"
+     ],
+     "destination": "./output/"
+   }
+   ```
+
 4. **symlink** - Create symbolic link (requires admin on Windows)
 
    ```json
@@ -85,14 +102,22 @@ An interactive PowerShell automation tool that executes workflows defined in JSO
    { "type": "mkdir", "path": "./[[[ANS:project_name]]]/src" }
    ```
 
-6. **rename** - Rename files by replacing placeholders in filenames
+6. **rename** - Rename files by replacing target string in filenames
 
    ```json
-   { "type": "rename", "files": "./template/*[[[ANS:module_name]]]*" }
+   {
+     "type": "rename",
+     "files": { "include": ["./output/*"], "exclude": [] },
+     "target": "__MODULE__",
+     "value": "[[[ANS:module_name]]]"
+   }
    ```
 
-   - `files`: File pattern (glob format)
-   - Automatically replaces `[[[...]]]` placeholders in filenames
+   - `files`: Patterns (array or `{include: [...], exclude: [...]}`)
+   - `target`: String to replace in filenames (supports placeholders)
+   - `value`: Replacement string (supports placeholders)
+
+   Example: `__MODULE__.js` → `mymodule.js` when `module_name` = `mymodule`
 
 **Conditions:**
 

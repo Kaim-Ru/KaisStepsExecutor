@@ -29,9 +29,9 @@
         },
         "input_type": {
           "type": "string",
-          "description": "Type of input to get from the user",
-          "enum": ["input", "select", "multiselect"],
-          "default": "input"
+          "description": "Type of input to get from the user. Built-in types: input, select, multiselect. Custom types are supported via hooks/[type].ps1",
+          "default": "input",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
         },
         "options": {
           "type": "array",
@@ -51,7 +51,8 @@
               { "$ref": "#/definitions/copyAction" },
               { "$ref": "#/definitions/symlinkAction" },
               { "$ref": "#/definitions/mkdirAction" },
-              { "$ref": "#/definitions/renameAction" }
+              { "$ref": "#/definitions/renameAction" },
+              { "$ref": "#/definitions/genericAction" }
             ]
           }
         }
@@ -246,8 +247,20 @@
           "const": "copy"
         },
         "source": {
-          "type": "string",
-          "description": "Source file or folder path (absolute or relative). Supports placeholders"
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Source file or folder path (absolute or relative). Supports placeholders"
+            },
+            {
+              "type": "array",
+              "description": "Array of source file or folder paths. All sources will be copied to the destination. Supports placeholders",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ]
         },
         "destination": {
           "type": "string",
@@ -313,15 +326,54 @@
     },
     "renameAction": {
       "type": "object",
-      "description": "Rename files by replacing placeholders in filenames",
-      "required": ["type", "files"],
+      "description": "Rename files by replacing target string in filenames",
+      "required": ["type", "files", "target", "value"],
       "properties": {
         "type": {
           "const": "rename"
         },
         "files": {
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "Array of glob patterns for files to rename",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "description": "File patterns with include and exclude lists",
+              "required": ["include"],
+              "properties": {
+                "include": {
+                  "type": "array",
+                  "description": "Glob patterns for files to include",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "exclude": {
+                  "type": "array",
+                  "description": "Glob patterns for files to exclude",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "target": {
           "type": "string",
-          "description": "File pattern (glob) to match files to rename. Supports wildcards and placeholders"
+          "description": "Target string to search for in filenames. Supports placeholders"
+        },
+        "value": {
+          "type": "string",
+          "description": "Replacement string for the target. Supports placeholders like [[[ANS:question_id]]] and [[[UUIDv4]]]"
         },
         "conditions": {
           "type": "array",
@@ -332,6 +384,29 @@
         }
       },
       "additionalProperties": false
+    },
+    "genericAction": {
+      "type": "object",
+      "description": "Generic action definition for custom action types implemented via hooks/[type].ps1",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Action type name. Built-in types: execute, replace, copy, symlink, mkdir, rename. Custom types are supported via hooks/[type].ps1",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "not": {
+            "enum": ["execute", "replace", "copy", "symlink", "mkdir", "rename"]
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": true
     }
   }
 }

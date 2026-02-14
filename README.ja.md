@@ -73,6 +73,23 @@ JSONで定義されたワークフローを実行するインタラクティブ�
    { "type": "copy", "source": "./template", "destination": "./output/" }
    ```
 
+   - `source`: 文字列または文字列の配列（複数ファイル/フォルダを一度にコピー可能）
+   - `destination`: コピー先のパス
+
+   **複数ソースの例:**
+
+   ```json
+   {
+     "type": "copy",
+     "source": [
+       "./templates/config.json",
+       "./templates/[[[ANS:module_name]]].js",
+       "./templates/styles.css"
+     ],
+     "destination": "./output/"
+   }
+   ```
+
 4. **symlink** - シンボリックリンクを作成（Windowsでは管理者権限が必要）
 
    ```json
@@ -85,14 +102,22 @@ JSONで定義されたワークフローを実行するインタラクティブ�
    { "type": "mkdir", "path": "./[[[ANS:project_name]]]/src" }
    ```
 
-6. **rename** - ファイル名のプレースホルダーを置換
+6. **rename** - ファイル名内の文字列を置換
 
    ```json
-   { "type": "rename", "files": "./template/*[[[ANS:module_name]]]*" }
+   {
+     "type": "rename",
+     "files": { "include": ["./output/*"], "exclude": [] },
+     "target": "__MODULE__",
+     "value": "[[[ANS:module_name]]]"
+   }
    ```
 
-   - `files`: ファイルパターン（glob形式）
-   - ファイル名に含まれる `[[[...]]]` プレースホルダーを自動的に置換します
+   - `files`: パターン（配列または `{include: [...], exclude: [...]}`）
+   - `target`: ファイル名内で置換する文字列（プレースホルダー使用可）
+   - `value`: 置換後の文字列（プレースホルダー使用可）
+
+   例: `__MODULE__.js` → `mymodule.js`（`module_name` が `mymodule` の場合）
 
 **条件:**
 

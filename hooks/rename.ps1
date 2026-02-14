@@ -1,4 +1,4 @@
-# Action type: rename (rename files with placeholder replacement)
+# Action type: rename (rename files by replacing target string in filename)
 
 . "$PSScriptRoot/common.ps1"
 
@@ -8,45 +8,96 @@ function Invoke-RenameAction {
         [hashtable]$Answers
     )
     
-    Write-Host "  [Rename] Renaming files with placeholder replacement..." -ForegroundColor Cyan
+    Write-Host "  [Rename] Renaming files by replacing target string..." -ForegroundColor Cyan
     
-    # Process placeholders in files pattern
-    $filesPattern = Invoke-Replacement -Text $Action.files -Answers $Answers
+    # Process target and value with placeholder replacement
+    $target = Invoke-Replacement -Text $Action.target -Answers $Answers
+    $value = Invoke-Replacement -Text $Action.value -Answers $Answers
     
-    # Resolve path
+    # Process files (support both array and object format)
+    $filePatterns = @()
+    $excludePatterns = @()
+    
+    if ($Action.files -is [array]) {
+        # Legacy array format
+        $filePatterns = $Action.files
+    } elseif ($Action.files -is [PSCustomObject] -or $Action.files -is [hashtable]) {
+        # New object format
+        if ($Action.files.include) {
+            foreach ($pattern in $Action.files.include) {
+                $filePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
+            }
+        }
+        
+        if ($Action.files.exclude) {
+            foreach ($pattern in $Action.files.exclude) {
+                $excludePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
+            }
+        }
+    }
+    
+    # Helper function to check if file should be processed
+    $shouldProcessFile = {
+        param([string]$FilePath)
+        
+        # Normalize path separators
+        $normalizedPath = $FilePath -replace '\\', '/'
+        
+        # Check exclude patterns
+        if ($excludePatterns.Count -gt 0) {
+            foreach ($pattern in $excludePatterns) {
+                $normalizedPattern = $pattern -replace '\\', '/'
+                if ($normalizedPath -like "*$normalizedPattern*" -or $normalizedPath -like $normalizedPattern) {
+                    return $false
+                }
+            }
+        }
+        
+        return $true
+    }
+    
+    # Collect all matching files
+    $allFiles = @()
     $baseDir = Get-Location
-    if ($filesPattern -match '^[a-zA-Z]:\\|^/') {
-        # Absolute path
-        $searchPath = $filesPattern
-    } else {
-        # Relative path
-        $searchPath = Join-Path $baseDir $filesPattern
-    }
     
-    # Find files matching the pattern
-    $files = @()
-    
-    # Support glob patterns
-    if ($filesPattern -match '\*') {
-        # Get all matching files
-        try {
-            $files = Get-ChildItem -Path $searchPath -File -ErrorAction Stop
-        } catch {
-            Write-Host "    ✗ No files found matching pattern: $filesPattern" -ForegroundColor Red
-            throw "No files found matching pattern: $filesPattern"
-        }
-    } else {
-        # Direct file path
-        if (Test-Path $searchPath -PathType Leaf) {
-            $files = @(Get-Item $searchPath)
+    foreach ($pattern in $filePatterns) {
+        $processedPattern = Invoke-Replacement -Text $pattern -Answers $Answers
+        
+        # Resolve path
+        if ($processedPattern -match '^[a-zA-Z]:\\|^/') {
+            # Absolute path
+            $searchPath = $processedPattern
         } else {
-            Write-Host "    ✗ File not found: $filesPattern" -ForegroundColor Red
-            throw "File not found: $filesPattern"
+            # Relative path
+            $searchPath = Join-Path $baseDir $processedPattern
+        }
+        
+        # Find files
+        if ($processedPattern -match '\*') {
+            # Glob pattern
+            try {
+                $matchedFiles = Get-ChildItem -Path $searchPath -File -ErrorAction Stop
+                foreach ($file in $matchedFiles) {
+                    if (& $shouldProcessFile $file.FullName) {
+                        $allFiles += $file
+                    }
+                }
+            } catch {
+                Write-Host "    ℹ No files found for pattern: $processedPattern" -ForegroundColor Yellow
+            }
+        } else {
+            # Direct file path
+            if (Test-Path $searchPath -PathType Leaf) {
+                $file = Get-Item $searchPath
+                if (& $shouldProcessFile $file.FullName) {
+                    $allFiles += $file
+                }
+            }
         }
     }
     
-    if ($files.Count -eq 0) {
-        Write-Host "    ℹ No files found matching pattern: $filesPattern" -ForegroundColor Yellow
+    if ($allFiles.Count -eq 0) {
+        Write-Host "    ℹ No files found matching patterns" -ForegroundColor Yellow
         Write-Host "  ✓ Rename completed (no files to rename)" -ForegroundColor Green
         return
     }
@@ -54,15 +105,15 @@ function Invoke-RenameAction {
     $renamedCount = 0
     $skippedCount = 0
     
-    foreach ($file in $files) {
+    foreach ($file in $allFiles) {
         $originalName = $file.Name
         $originalPath = $file.FullName
         $parentDir = $file.DirectoryName
         
-        # Check if filename contains placeholders
-        if ($originalName -match '\[\[\[.*?\]\]\]') {
-            # Replace placeholders in filename
-            $newName = Invoke-Replacement -Text $originalName -Answers $Answers
+        # Check if filename contains the target string
+        if ($originalName.Contains($target)) {
+            # Replace target with value in filename
+            $newName = $originalName -replace [regex]::Escape($target), $value
             $newPath = Join-Path $parentDir $newName
             
             # Skip if name hasn't changed
@@ -76,6 +127,7 @@ function Invoke-RenameAction {
             if (Test-Path $newPath) {
                 Write-Host "    ✗ Target already exists: $newName" -ForegroundColor Red
                 Write-Host "      Original: $originalName" -ForegroundColor Gray
+                $skippedCount++
                 continue
             }
             
@@ -87,10 +139,11 @@ function Invoke-RenameAction {
             } catch {
                 Write-Host "    ✗ Failed to rename: $originalName" -ForegroundColor Red
                 Write-Host "      Error: $_" -ForegroundColor Red
+                $skippedCount++
             }
         } else {
-            # No placeholders found in filename
-            Write-Host "    ℹ Skipped (no placeholders): $originalName" -ForegroundColor Yellow
+            # Target string not found in filename
+            Write-Host "    ℹ Skipped (target not found): $originalName" -ForegroundColor Yellow
             $skippedCount++
         }
     }
