@@ -1,4 +1,4 @@
-# PowerShell Steps Executor
+# Kais Steps Executor
 
 [English version is here](README.md)
 
@@ -6,20 +6,21 @@ JSONで定義されたワークフローを実行するインタラクティブ�
 
 ## Features ✨
 
-- **対話型のプロジェクトセットアップ自動化ツール** - ユーザーに質問して、回答に基づいて自動的にプロジェクトを構成
+- **対話型のプロジェクトセットアップ自動化** - ユーザーに質問して、回答に基づいて自動的にプロジェクトを構成
 - **わかりやすく、宣言的なsteps.json** - JSONベースの設定で直感的にワークフローを定義
 - **スキーマによる検証** - steps.json.schemaによる設定ファイルの検証機能
-- **Agent Skills & AGENTS.md** - AIエージェント向けドキュメントで拡張性をサポート
-- **PowerShellで環境を汚さない** - 追加のランタイムやパッケージマネージャーが不要
+- **Agent Skills & AGENTS.md** - AIエージェント向けの組み込みドキュメントで拡張性をサポート
+- **クリーンなPowerShell環境** - 追加のランタイムやパッケージマネージャーが不要
 
 ## 使い方
 
 ```powershell
-.\generator.ps1                           # デフォルトのsteps.jsonを使用
 .\generator.ps1 -StepPath "custom.json"  # カスタム設定を使用
 ```
 
 ## 設定
+
+steps/steps.schema.json を確認することをお勧めします。
 
 **基本構造:**
 
@@ -121,6 +122,8 @@ JSONで定義されたワークフローを実行するインタラクティブ�
 
 **条件:**
 
+**条件:**
+
 アクションは条件が満たされた場合のみ実行されます（AND論理）:
 
 ```json
@@ -149,21 +152,20 @@ JSONで定義されたワークフローを実行するインタラクティブ�
 {
   "steps": [
     {
-      "question_id": "name",
+      "question_id": "project_name",
       "question": "プロジェクト名は？",
       "input_type": "input",
       "actions": [
-        { "type": "mkdir", "path": "./[[[ANS:name]]]" },
-        {
-          "type": "replace",
-          "files": ["./template/**"],
-          "target": "[[[NAME]]]",
-          "value": "[[[ANS:name]]]"
-        },
         {
           "type": "copy",
           "source": "./template",
-          "destination": "./[[[ANS:name]]]/"
+          "destination": "./out/[[[ANS:project_name]]]"
+        },
+        {
+          "type": "replace",
+          "files": ["./out/[[[ANS:project_name]]]"],
+          "target": "[[[NAME]]]",
+          "value": "[[[ANS:project_name]]]"
         }
       ]
     },
@@ -171,10 +173,10 @@ JSONで定義されたワークフローを実行するインタラクティブ�
       "question_id": "typescript",
       "question": "TypeScriptを使用しますか？",
       "input_type": "select",
-      "options": ["はい", "いいえ"],
+      "options": ["Yes", "No"],
       "actions": [
         {
-          "conditions": [{ "question_id": "typescript", "ans": "はい" }],
+          "conditions": [{ "question_id": "typescript", "ans": "Yes" }],
           "type": "execute",
           "command": "npm install -D typescript"
         }
@@ -222,3 +224,8 @@ function Invoke-CustomAction {
 ## ライセンス
 
 MIT
+
+
+
+
+
