@@ -345,7 +345,7 @@ try {
     $answers = @{}
     
     Write-Host "==========================================" -ForegroundColor Cyan
-    Write-Host "  PowerShell Steps Executor" -ForegroundColor Cyan
+    Write-Host "            KaisStepsExecutor" -ForegroundColor Cyan
     Write-Host "==========================================" -ForegroundColor Cyan
     Write-Host ""
     
