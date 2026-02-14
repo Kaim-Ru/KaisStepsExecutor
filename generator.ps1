@@ -171,6 +171,9 @@ function Invoke-ReplaceAction {
     $filesProcessed = 0
     
     foreach ($filePattern in $Action.files) {
+        # Process placeholders in file pattern
+        $filePattern = Invoke-Replacement -Text $filePattern -Answers $Answers
+        
         # Resolve path (support both absolute and relative paths)
         $resolvedPath = $filePattern
         if (-not [System.IO.Path]::IsPathRooted($filePattern)) {
@@ -365,9 +368,18 @@ try {
                 $stepType = "input"
             }
             
-            $options = if ($step.options) { $step.options } else { @() }
+            # Process question text with placeholders
+            $processedQuestion = Invoke-Replacement -Text $step.question -Answers $answers
             
-            $answer = Get-UserInput -Question $step.question -Type $stepType -Options $options
+            # Process options with placeholders
+            $processedOptions = @()
+            if ($step.options) {
+                foreach ($option in $step.options) {
+                    $processedOptions += Invoke-Replacement -Text $option -Answers $answers
+                }
+            }
+            
+            $answer = Get-UserInput -Question $processedQuestion -Type $stepType -Options $processedOptions
             $answers[$step.question_id] = $answer
             Write-Host "  Answer saved: '$answer'" -ForegroundColor Green
             Write-Host ""
