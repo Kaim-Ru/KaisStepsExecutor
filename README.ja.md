@@ -109,7 +109,7 @@ steps/steps.schema.json を確認することをお勧めします。
    {
      "type": "rename",
      "files": { "include": ["./output/*"], "exclude": [] },
-     "target": "__MODULE__",
+     "target": "[[[MODULE]]]",
      "value": "[[[ANS:module_name]]]"
    }
    ```
@@ -118,7 +118,7 @@ steps/steps.schema.json を確認することをお勧めします。
    - `target`: ファイル名内で置換する文字列（プレースホルダー使用可）
    - `value`: 置換後の文字列（プレースホルダー使用可）
 
-   例: `__MODULE__.js` → `mymodule.js`（`module_name` が `mymodule` の場合）
+   例: `[[[MODULE]]].js` → `mymodule.js`（`module_name` が `mymodule` の場合）
 
 **条件:**
 
@@ -224,8 +224,3 @@ function Invoke-CustomAction {
 ## ライセンス
 
 MIT
-
-
-
-
-

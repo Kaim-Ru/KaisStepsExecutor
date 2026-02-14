@@ -10,8 +10,9 @@ function Invoke-RenameAction {
     
     Write-Host "  [Rename] Renaming files by replacing target string..." -ForegroundColor Cyan
     
-    # Process target and value with placeholder replacement
-    $target = Invoke-Replacement -Text $Action.target -Answers $Answers
+    # Process target without placeholder replacement (literal string match)
+    # Process value with placeholder replacement
+    $target = $Action.target
     $value = Invoke-Replacement -Text $Action.value -Answers $Answers
     
     # Process files (support both array and object format)

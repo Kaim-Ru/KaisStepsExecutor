@@ -109,7 +109,7 @@ I recommend taking a look at steps/steps.schema.json.
    {
      "type": "rename",
      "files": { "include": ["./output/*"], "exclude": [] },
-     "target": "__MODULE__",
+     "target": "[[[MODULE]]]",
      "value": "[[[ANS:module_name]]]"
    }
    ```
@@ -118,7 +118,7 @@ I recommend taking a look at steps/steps.schema.json.
    - `target`: String to replace in filenames (supports placeholders)
    - `value`: Replacement string (supports placeholders)
 
-   Example: `__MODULE__.js` → `mymodule.js` when `module_name` = `mymodule`
+   Example: `[[[MODULE]]].js` → `mymodule.js` when `module_name` = `mymodule`
 
 **Conditions:**
 
@@ -224,7 +224,3 @@ For developers and AI agents, see [AGENTS.md](AGENTS.md) for architecture, codin
 ## License
 
 MIT
-
-
-
-
