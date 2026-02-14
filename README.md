@@ -143,8 +143,33 @@ Actions execute only when conditions are met (AND logic):
 - `[[[ANS:question_id]]]` - Reference answer
 - `[[[UUIDv4]]]` - Generate unique UUID
 - `\[[[...]]]` - Escape (use `\\[[[...]]]` in JSON)
+- Custom placeholders - Register dynamically from any hook file
 
 Placeholders work in: `question`, `options`, `command`, `target`, `value`, `source`, `destination`, `path`, and condition `ans` values.
+
+**Custom Placeholders:**
+
+Register custom placeholders in any hook file without modifying `common.ps1`:
+
+```powershell
+# In hooks/myhook.ps1
+. "$PSScriptRoot/common.ps1"
+
+Register-Placeholder -Name "TIMESTAMP" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyyMMdd_HHmmss"
+}
+
+# Now [[[TIMESTAMP]]] can be used anywhere
+```
+
+See [demo-custom-placeholders.steps.json](steps/demo-custom-placeholders.steps.json) and [hooks/builtin/demo-custom-placeholders.ps1](hooks/builtin/demo-custom-placeholders.ps1) for examples.
+
+**Try the demo:**
+
+```powershell
+.\generator.ps1 -StepPath "steps/demo-custom-placeholders.steps.json"
+```
 
 ## Example
 

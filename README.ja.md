@@ -143,8 +143,33 @@ steps/steps.schema.json を確認することをお勧めします。
 - `[[[ANS:question_id]]]` - 回答を参照
 - `[[[UUIDv4]]]` - 一意なUUIDを生成
 - `\[[[...]]]` - エスケープ（JSONでは `\\[[[...]]]` を使用）
+- カスタムプレースホルダー - どのフックファイルからでも動的に登録可能
 
 プレースホルダーが使える場所: `question`、`options`、`command`、`target`、`value`、`source`、`destination`、`path`、条件の `ans` 値
+
+**カスタムプレースホルダー:**
+
+`common.ps1`を変更せずに、どのフックファイルからでもカスタムプレースホルダーを登録できます:
+
+```powershell
+# hooks/myhook.ps1 内で
+. "$PSScriptRoot/common.ps1"
+
+Register-Placeholder -Name "TIMESTAMP" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyyMMdd_HHmmss"
+}
+
+# これで [[[TIMESTAMP]]] がどこでも使えます
+```
+
+実例は [demo-custom-placeholders.steps.json](steps/demo-custom-placeholders.steps.json) と [hooks/builtin/demo-custom-placeholders.ps1](hooks/builtin/demo-custom-placeholders.ps1) を参照してください。
+
+**デモを実行:**
+
+```powershell
+.\generator.ps1 -StepPath "steps/demo-custom-placeholders.steps.json"
+```
 
 ## 例
 

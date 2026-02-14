@@ -333,9 +333,222 @@ Result: `./projects/web-apps/my-blog/`
 
 ## Adding Custom Placeholders
 
-To add new placeholder types, modify the `Invoke-Replacement` function in `hooks/common.ps1`.
+The system supports two methods for adding custom placeholders:
 
-### Current Implementation
+1. **Dynamic Registration (Recommended)**: Register placeholders from any hook file without modifying `common.ps1`
+2. **Direct Implementation (Legacy)**: Modify `Invoke-Replacement` function in `common.ps1`
+
+---
+
+### Method 1: Dynamic Registration (Recommended)
+
+**Available since**: v2.0
+
+Use the `Register-Placeholder` function to dynamically add custom placeholders from any hook file.
+
+#### Basic Usage
+
+```powershell
+# In any hook file (e.g., hooks/myhook.ps1)
+. "$PSScriptRoot/common.ps1"
+
+# Register a custom placeholder
+Register-Placeholder -Name "TIMESTAMP" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyyMMdd_HHmmss"
+}
+
+# Now [[[TIMESTAMP]]] can be used anywhere in the workflow
+```
+
+#### Function Signature
+
+```powershell
+Register-Placeholder -Name <string> -ScriptBlock <scriptblock>
+```
+
+**Parameters:**
+
+- **Name**: Placeholder name without `[[[  ]]]` brackets
+- **ScriptBlock**: A scriptblock that generates the value, receives `$Answers` hashtable as parameter
+
+#### Example 1: Simple Static Value
+
+```powershell
+# Register current date
+Register-Placeholder -Name "DATE" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyy-MM-dd"
+}
+```
+
+**Usage in steps.json:**
+
+```json
+{
+  "type": "replace",
+  "files": ["./README.md"],
+  "target": "[[[CREATED_DATE]]]",
+  "value": "[[[DATE]]]"
+}
+```
+
+#### Example 2: Using Answer Data
+
+```powershell
+# Convert project name to uppercase
+Register-Placeholder -Name "PROJECT_UPPER" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("project_name")) {
+        return $Answers["project_name"].ToUpper()
+    }
+    return ""
+}
+```
+
+**Usage:**
+
+```json
+{
+  "steps": [
+    {
+      "question_id": "project_name",
+      "question": "Enter project name:",
+      "input_type": "input"
+    },
+    {
+      "actions": [
+        {
+          "type": "execute",
+          "command": "Write-Host 'Creating [[[PROJECT_UPPER]]]'"
+        }
+      ]
+    }
+  ]
+}
+```
+
+If user enters `my-project`, output: `Creating MY-PROJECT`
+
+#### Example 3: Complex Processing (Real-World)
+
+See [hooks/minecraftversion.ps1](d:\AddonDevelopment\addondev\hooks\minecraftversion.ps1) for a real implementation:
+
+```powershell
+# In hooks/minecraftversion.ps1
+. "$PSScriptRoot/common.ps1"
+
+# Extract major version from Minecraft version string
+Register-Placeholder -Name "MC_VERSION_MAJOR" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("mc_version")) {
+        $version = $Answers["mc_version"]
+        if ($version -match '^(\d+)\.') {
+            return $Matches[1]
+        }
+    }
+    return "0"
+}
+
+# Extract minor version
+Register-Placeholder -Name "MC_VERSION_MINOR" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("mc_version")) {
+        $version = $Answers["mc_version"]
+        if ($version -match '^\d+\.(\d+)') {
+            return $Matches[1]
+        }
+    }
+    return "0"
+}
+
+# Extract patch version
+Register-Placeholder -Name "MC_VERSION_PATCH" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("mc_version")) {
+        $version = $Answers["mc_version"]
+        if ($version -match '^\d+\.\d+\.(\d+)') {
+            return $Matches[1]
+        }
+    }
+    return "0"
+}
+```
+
+**Usage:**
+
+```json
+{
+  "steps": [
+    {
+      "question_id": "mc_version",
+      "question": "Select Minecraft version:",
+      "input_type": "minecraftversion"
+    },
+    {
+      "actions": [
+        {
+          "type": "replace",
+          "files": ["./config.json"],
+          "target": "\"major\": 0",
+          "value": "\"major\": [[[MC_VERSION_MAJOR]]]"
+        }
+      ]
+    }
+  ]
+}
+```
+
+If user selects version `1.20.41-beta.1`:
+
+- `[[[MC_VERSION_MAJOR]]]` → `1`
+- `[[[MC_VERSION_MINOR]]]` → `20`
+- `[[[MC_VERSION_PATCH]]]` → `41`
+
+#### Example 4: Multiple Random Values
+
+```powershell
+# Generate unique random ID
+Register-Placeholder -Name "RANDOM_ID" -ScriptBlock {
+    param($Answers)
+    return Get-Random -Minimum 10000 -Maximum 99999
+}
+```
+
+**Note**: Unlike `[[[UUIDv4]]]`, this generates a NEW value each time `Invoke-Replacement` is called, but returns the SAME value for all occurrences within a single call.
+
+#### When to Register Placeholders
+
+**Best Practice**: Register placeholders at the top of your hook file, before defining hook functions.
+
+```powershell
+# Good: Register at the beginning
+. "$PSScriptRoot/common.ps1"
+
+Register-Placeholder -Name "MY_PLACEHOLDER" -ScriptBlock { ... }
+
+function Get-UserInput { ... }
+```
+
+**Input Type Hooks**: Register before `Get-UserInput`, placeholders become available for all subsequent steps.
+
+**Action Type Hooks**: Register before `Invoke-*Action`, placeholders become available immediately.
+
+---
+
+### Method 2: Direct Implementation (Legacy)
+
+Modify the `Invoke-Replacement` function in `hooks/common.ps1`.
+
+**⚠️ Not Recommended**: This method requires modifying core files and makes maintenance difficult.
+
+**Use Dynamic Registration instead** unless you need:
+
+- Built-in placeholders that should always be available
+- Performance-critical operations
+- Core system features
+
+#### Current Implementation
 
 ```powershell
 function Invoke-Replacement {
@@ -352,21 +565,38 @@ function Invoke-Replacement {
         $result = $result -replace [regex]::Escape($placeholder), [regex]::Escape($Answers[$key])
     }
 
-    # 2. Replace [[[UUIDv4]]]
+    # 2. Custom placeholders (registered dynamically)
+    foreach ($placeholderName in $script:CustomPlaceholders.Keys) {
+        $placeholder = "[[[${placeholderName}]]]"
+        if ($result.Contains($placeholder)) {
+            try {
+                $value = & $script:CustomPlaceholders[$placeholderName] $Answers
+                $result = $result.Replace($placeholder, $value)
+            }
+            catch {
+                Write-Host "  [Warning] Failed to process custom placeholder [[[${placeholderName}]]]: $_" -ForegroundColor Yellow
+            }
+        }
+    }
+
+    # 3. Replace [[[UUIDv4]]]
     while ($result.Contains("[[[UUIDv4]]]")) {
         $newUUID = [guid]::NewGuid().ToString()
         $index = $result.IndexOf("[[[UUIDv4]]]")
         $result = $result.Substring(0, $index) + $newUUID + $result.Substring($index + "[[[UUIDv4]]]".Length)
     }
 
-    # 3. Unescape \[[[ to [[[
+    # 4. Expand environment variables
+    $result = [Environment]::ExpandEnvironmentVariables($result)
+
+    # 5. Unescape \[[[ to [[[
     $result = $result -replace '\\(\[\[\[)', '$1'
 
     return $result
 }
 ```
 
-### Example: Adding [[[DATE]]] Placeholder
+#### Example: Adding [[[DATE]]] Placeholder (Legacy)
 
 **Requirement**: Insert current date in `yyyy-MM-dd` format
 
@@ -427,58 +657,35 @@ function Invoke-Replacement {
 Project created on: 2026-02-14
 ```
 
-### Example: Adding [[[DATETIME]]] Placeholder
-
-**Requirement**: Insert current datetime with timestamp
+**Note**: These examples show the legacy method. Use Dynamic Registration instead:
 
 ```powershell
-# Replace [[[DATETIME]]]
-if ($result.Contains("[[[DATETIME]]]")) {
-    $currentDateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $result = $result -replace [regex]::Escape("[[[DATETIME]]]"), $currentDateTime
+# In any hook file
+Register-Placeholder -Name "DATE" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyy-MM-dd"
+}
+
+Register-Placeholder -Name "DATETIME" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+}
+
+Register-Placeholder -Name "USER" -ScriptBlock {
+    param($Answers)
+    return $env:USERNAME
 }
 ```
 
-### Example: Adding [[[USER]]] Placeholder
+**Comparison:**
 
-**Requirement**: Insert current Windows username
-
-```powershell
-# Replace [[[USER]]]
-if ($result.Contains("[[[USER]]]")) {
-    $currentUser = $env:USERNAME
-    $result = $result -replace [regex]::Escape("[[[USER]]]"), $currentUser
-}
-```
-
-### Example: Adding [[[RANDOM:N]]] Placeholder
-
-**Requirement**: Generate N random digits
-
-```powershell
-# Replace [[[RANDOM:N]]] with N random digits
-while ($result -match '\[\[\[RANDOM:(\d+)\]\]\]') {
-    $length = [int]$Matches[1]
-    $randomNumber = ""
-    for ($i = 0; $i -lt $length; $i++) {
-        $randomNumber += Get-Random -Minimum 0 -Maximum 10
-    }
-    $result = $result -replace [regex]::Escape("[[[RANDOM:$length]]]"), $randomNumber, 1
-}
-```
-
-**Usage:**
-
-```json
-{
-  "type": "replace",
-  "files": ["./config.txt"],
-  "target": "[[[ID]]]",
-  "value": "[[[RANDOM:8]]]"
-}
-```
-
-**Result:** `12345678` (8 random digits)
+| Aspect          | Dynamic Registration | Legacy Method           |
+| --------------- | -------------------- | ----------------------- |
+| Code Location   | Any hook file        | `hooks/common.ps1` only |
+| Modifies Core   | ❌ No                | ✅ Yes                  |
+| Maintainability | ✅ High              | ❌ Low                  |
+| Reusability     | ✅ High              | ⚠️ Medium               |
+| Recommended     | ✅ Yes               | ❌ No                   |
 
 ---
 
@@ -488,21 +695,42 @@ while ($result -match '\[\[\[RANDOM:(\d+)\]\]\]') {
 
 - Use ALL CAPS for placeholder names: `[[[DATE]]]`, not `[[[date]]]`
 - Use descriptive names: `[[[TIMESTAMP]]]` not `[[[TS]]]`
-- Use colons for parameters: `[[[RANDOM:8]]]`
+- Use colons for parameters: `[[[RANDOM:8]]]` (if implementing parameterized placeholders)
+- Avoid conflicts with built-in placeholders: `ANS`, `UUIDv4`
 
-### 2. Processing Order
+### 2. When to Use Dynamic Registration
 
-Add placeholders in this order within `Invoke-Replacement`:
+**✅ Use Dynamic Registration for:**
 
-1. **Context-dependent** (require $Answers): `[[[ANS:...]]]`
-2. **Context-independent** (no dependencies): `[[[DATE]]]`, `[[[USER]]]`
-3. **Dynamic/random**: `[[[UUIDv4]]]`, `[[[RANDOM:N]]]`
-4. **Escaping**: Always last
+- Hook-specific placeholders (e.g., `MC_VERSION_MAJOR` in `minecraftversion.ps1`)
+- Workflow-specific transformations
+- Reusable utilities that depend on user answers
+- Experimental or temporary placeholders
+
+**⚠️ Use Legacy Method (modify `common.ps1`) only for:**
+
+- Core built-in placeholders needed system-wide
+- Performance-critical operations
+- Features that should always be available
 
 ### 3. Error Handling
 
+**Dynamic Registration** (automatic error handling):
+
 ```powershell
-# Good: Handle potential errors
+Register-Placeholder -Name "SAFE_NAME" -ScriptBlock {
+    param($Answers)
+    try {
+        return $Answers["name"].ToUpper()
+    } catch {
+        return "DEFAULT"
+    }
+}
+```
+
+**Legacy Method** (manual error handling):
+
+```powershell
 if ($result.Contains("[[[DATE]]]")) {
     try {
         $currentDate = Get-Date -Format "yyyy-MM-dd"
@@ -513,33 +741,27 @@ if ($result.Contains("[[[DATE]]]")) {
 }
 ```
 
-### 4. Performance
+### 4. Scope and Lifetime
 
-For placeholders that appear multiple times:
+**Dynamic placeholders** are registered once and available for all subsequent `Invoke-Replacement` calls:
 
 ```powershell
-# Efficient: Replace all at once
-if ($result.Contains("[[[DATE]]]")) {
-    $currentDate = Get-Date -Format "yyyy-MM-dd"
-    $result = $result -replace [regex]::Escape("[[[DATE]]]"), $currentDate
-}
+# In hooks/myhook.ps1 - registered when hook is loaded
+Register-Placeholder -Name "TIMESTAMP" -ScriptBlock { ... }
 
-# Less efficient: Loop for unique values
-while ($result.Contains("[[[UUIDv4]]]")) {
-    $newUUID = [guid]::NewGuid().ToString()
-    $index = $result.IndexOf("[[[UUIDv4]]]")
-    $result = $result.Substring(0, $index) + $newUUID + $result.Substring($index + 13)
-}
+# Available in all subsequent steps
 ```
+
+**Lifetime**: Until PowerShell session ends or `generator.ps1` completes.
 
 ### 5. Documentation
 
-When adding placeholders:
+When adding custom placeholders:
 
-1. Update `hooks/common.ps1` with implementation
-2. Document in `README.md` under "Placeholders" section
-3. Document in this skill file
-4. Add usage examples
+1. **For Hook-Specific Placeholders**: Document in hook file comments
+2. **For Reusable Placeholders**: Document in workflow's README or steps.json comments
+3. **For Built-in Placeholders**: Update this skill file and main README.md
+4. Always include usage examples
 
 ---
 
@@ -567,10 +789,6 @@ Create `test-placeholders.json`:
         },
         {
           "type": "execute",
-          "command": "Write-Host 'Date: [[[DATE]]]'"
-        },
-        {
-          "type": "execute",
           "command": "Write-Host 'Escaped: \\[[[ANS:name]]]'"
         }
       ]
@@ -585,6 +803,62 @@ Run:
 .\generator.ps1 -StepPath "test-placeholders.json"
 ```
 
+### Testing Custom Placeholders
+
+**Create a test hook** (`hooks/test-custom.ps1`):
+
+```powershell
+. "$PSScriptRoot/common.ps1"
+
+Register-Placeholder -Name "TIMESTAMP" -ScriptBlock {
+    param($Answers)
+    return Get-Date -Format "yyyyMMdd_HHmmss"
+}
+
+Register-Placeholder -Name "UPPER_NAME" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("name")) {
+        return $Answers["name"].ToUpper()
+    }
+    return ""
+}
+
+function Get-UserInput {
+    param([string]$Question, [hashtable]$Answers)
+    # Just return empty - this is for testing placeholders
+    return ""
+}
+```
+
+**Test workflow** (`test-custom-placeholders.steps.json`):
+
+```json
+{
+  "steps": [
+    {
+      "question_id": "name",
+      "question": "Enter name:",
+      "input_type": "input"
+    },
+    {
+      "question_id": "test",
+      "question": "Test custom placeholders:",
+      "input_type": "test-custom",
+      "actions": [
+        {
+          "type": "execute",
+          "command": "Write-Host 'TIMESTAMP: [[[TIMESTAMP]]]'"
+        },
+        {
+          "type": "execute",
+          "command": "Write-Host 'UPPER_NAME: [[[UPPER_NAME]]]'"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### Manual Testing
 
 Test replacement independently:
@@ -593,6 +867,12 @@ Test replacement independently:
 # Load the function
 . "./hooks/common.ps1"
 
+# Register a test placeholder
+Register-Placeholder -Name "TEST" -ScriptBlock {
+    param($Answers)
+    return "Custom Value: $($Answers['name'])"
+}
+
 # Create test answers
 $answers = @{
     "name" = "TestProject"
@@ -600,11 +880,12 @@ $answers = @{
 }
 
 # Test replacement
-$text = "Project [[[ANS:name]]] version [[[ANS:version]]] ID: [[[UUIDv4]]]"
+$text = "Project [[[ANS:name]]] version [[[ANS:version]]] - [[[TEST]]] - ID: [[[UUIDv4]]]"
 $result = Invoke-Replacement -Text $text -Answers $answers
 
 Write-Host "Original: $text"
 Write-Host "Result: $result"
+# Expected: Project TestProject version 1.0.0 - Custom Value: TestProject - ID: <uuid>
 ```
 
 ---
@@ -684,11 +965,45 @@ Write-Host "Result: $result"
 
 ## Best Practices
 
+### General
+
 1. ✅ Use descriptive question_ids that match placeholder intent
 2. ✅ Test placeholders with simple examples first
-3. ✅ Document custom placeholders in README.md
+3. ✅ Document custom placeholders appropriately (hook file, README, or skill file)
 4. ✅ Use escaping for literal placeholder text in documentation
-5. ✅ Consider placeholder processing order when adding custom ones
-6. ✅ Handle errors gracefully in custom placeholder implementations
-7. ✅ Use `[regex]::Escape()` when replacing with user input
-8. ✅ Test all placeholder combinations in your workflows
+5. ✅ Handle errors gracefully in custom placeholder implementations
+6. ✅ Test all placeholder combinations in your workflows
+
+### For Dynamic Registration
+
+7. ✅ Register placeholders at the top of hook files
+8. ✅ Use meaningful names that describe the value transformation
+9. ✅ Check if answer keys exist before accessing them
+10. ✅ Provide default values when data is missing
+11. ✅ Keep scriptblocks simple and focused on one transformation
+12. ✅ Use `Write-Verbose` for debugging placeholder registration
+
+### Example: Good vs Bad
+
+**❌ Bad:**
+
+```powershell
+# Vague name, no error handling
+Register-Placeholder -Name "VER" -ScriptBlock {
+    param($Answers)
+    return $Answers["version"].Split(".")[0]
+}
+```
+
+**✅ Good:**
+
+```powershell
+# Clear name, error handling, default value
+Register-Placeholder -Name "VERSION_MAJOR" -ScriptBlock {
+    param($Answers)
+    if ($Answers.ContainsKey("version") -and $Answers["version"] -match '^(\d+)') {
+        return $Matches[1]
+    }
+    return "0"
+}
+```
