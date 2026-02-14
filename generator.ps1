@@ -49,9 +49,10 @@ function Test-Conditions {
         
         # Check if expectedAns is a regex object
         if ($expectedAns -is [PSCustomObject] -and $expectedAns.regex) {
-            # Regex matching
+            # Regex matching - process placeholders in regex pattern
+            $processedRegex = Invoke-Replacement -Text $expectedAns.regex -Answers $Answers
             $userAnswer = $Answers[$questionId]
-            if (-not ($userAnswer -match $expectedAns.regex)) {
+            if (-not ($userAnswer -match $processedRegex)) {
                 return $false
             }
         }
@@ -60,7 +61,9 @@ function Test-Conditions {
             # If it's an array, check if the answer matches any of the values
             $match = $false
             foreach ($value in $expectedAns) {
-                if ($Answers[$questionId] -eq $value) {
+                # Process placeholders in each value
+                $processedValue = Invoke-Replacement -Text $value -Answers $Answers
+                if ($Answers[$questionId] -eq $processedValue) {
                     $match = $true
                     break
                 }
@@ -69,8 +72,9 @@ function Test-Conditions {
                 return $false
             }
         } else {
-            # Single value comparison
-            if ($Answers[$questionId] -ne $expectedAns) {
+            # Single value comparison - process placeholders
+            $processedAns = Invoke-Replacement -Text $expectedAns -Answers $Answers
+            if ($Answers[$questionId] -ne $processedAns) {
                 return $false
             }
         }
