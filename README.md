@@ -1,4 +1,4 @@
-# PowerShell Steps Executor
+# Kais Steps Executor
 
 [日本語版はこちら (Japanese)](README.ja.md)
 
@@ -224,3 +224,4 @@ For developers and AI agents, see [AGENTS.md](AGENTS.md) for architecture, codin
 ## License
 
 MIT
+
