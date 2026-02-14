@@ -15,7 +15,7 @@ This script executes processes defined in a JSON file (default: `steps.json`) in
 To use a custom configuration file:
 
 ```powershell
-.\generate.ps1 -ConfigPath "custom-steps.json"
+.\generate.ps1 -StepPath "custom-steps.json"
 ```
 
 ## steps.json Structure
@@ -314,6 +314,138 @@ Please select (1-2): 1
   ✓ All steps completed successfully!
 ==========================================
 ```
+
+## Hook System (Extensibility)
+
+All input types and action types are implemented as **hooks** in the `./hooks/` directory. This architecture makes it easy to add custom types without modifying the core script.
+
+### Architecture
+
+The system consists of:
+
+- **generator.ps1**: Core orchestrator (loads and executes hooks)
+- **hooks/common.ps1**: Shared utilities (`Invoke-Replacement`)
+- **hooks/{type}.ps1**: Type-specific implementations
+
+### Built-in Hooks
+
+**Input Types:**
+
+- `hooks/input.ps1` - Text input (default)
+- `hooks/select.ps1` - Single selection from options
+
+**Action Types:**
+
+- `hooks/execute.ps1` - Execute PowerShell commands
+- `hooks/replace.ps1` - String replacement in files
+- `hooks/copy.ps1` - Copy files/folders
+- `hooks/symlink.ps1` - Create symbolic links
+
+### Creating Custom Hooks
+
+#### Custom Input Type
+
+Create `hooks/{type}.ps1` with a `Get-UserInput` function:
+
+```powershell
+# hooks/multiselect.ps1
+. "$PSScriptRoot/common.ps1"
+
+function Get-UserInput {
+    param(
+        [string]$Question,
+        [array]$Options,
+        [hashtable]$Answers
+    )
+
+    Write-Host ""
+    $processedQuestion = Invoke-Replacement -Text $Question -Answers $Answers
+    Write-Host $processedQuestion -ForegroundColor Cyan
+
+    # Custom implementation here
+    # Example: Allow multiple selections, return comma-separated values
+
+    # Display options
+    for ($i = 0; $i -lt $Options.Count; $i++) {
+        Write-Host "  $($i + 1). $($Options[$i])"
+    }
+
+    $selected = Read-Host "Select multiple (e.g., 1,3,4)"
+    # Process and return result...
+
+    return $result
+}
+```
+
+**Usage in steps.json:**
+
+```json
+{
+  "question_id": "features",
+  "question": "Select features",
+  "input_type": "multiselect",
+  "options": ["Auth", "Database", "API"]
+}
+```
+
+#### Custom Action Type
+
+Create `hooks/{type}.ps1` with an `Invoke-{Type}Action` function:
+
+```powershell
+# hooks/mkdir.ps1
+. "$PSScriptRoot/common.ps1"
+
+function Invoke-MkdirAction {
+    param(
+        [object]$Action,
+        [hashtable]$Answers
+    )
+
+    Write-Host "  [Mkdir] Creating directory..." -ForegroundColor Cyan
+
+    # Process placeholders
+    $path = Invoke-Replacement -Text $Action.path -Answers $Answers
+
+    # Resolve path
+    if (-not [System.IO.Path]::IsPathRooted($path)) {
+        $path = Join-Path (Get-Location) $path
+    }
+
+    # Create directory
+    if (-not (Test-Path $path)) {
+        New-Item -ItemType Directory -Path $path -Force | Out-Null
+        Write-Host "    ✓ Created: $path" -ForegroundColor Green
+    } else {
+        Write-Host "    ℹ Already exists: $path" -ForegroundColor Yellow
+    }
+}
+```
+
+**Usage in steps.json:**
+
+```json
+{
+  "type": "mkdir",
+  "path": "./output/[[[ANS:project_name]]]"
+}
+```
+
+### Hook Guidelines
+
+1. **Always load common.ps1**: `. "$PSScriptRoot/common.ps1"`
+2. **Use standard function signatures**:
+   - Input: `Get-UserInput` with `$Question`, `$Options`, `$Answers`
+   - Action: `Invoke-{Type}Action` with `$Action`, `$Answers`
+3. **Process placeholders** using `Invoke-Replacement`
+4. **Provide user feedback** with colored `Write-Host` messages
+5. **Throw exceptions** on unrecoverable errors (will be caught by main script)
+
+### Dependencies
+
+- **generator.ps1** depends on: `hooks/common.ps1` (loaded at startup)
+- All hooks depend on: `hooks/common.ps1` (for `Invoke-Replacement`)
+- Hooks are loaded dynamically when needed (lazy loading)
 
 ## Features
 

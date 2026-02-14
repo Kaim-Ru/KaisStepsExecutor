@@ -1,0 +1,34 @@
+//you can use this file by running '.\generator.ps1 -StepPath=test-custom-hooks.json' in PowerShell.
+{
+  "steps": [
+    {
+      "question_id": "features",
+      "question": "Select features to include",
+      "input_type": "multiselect",
+      "options": ["Authentication", "Database", "API", "Frontend", "Testing"]
+    },
+    {
+      "question_id": "project_name",
+      "question": "Enter project name",
+      "input_type": "input",
+      "actions": [
+        {
+          "type": "mkdir",
+          "path": "./output/[[[ANS:project_name]]]"
+        },
+        {
+          "type": "mkdir",
+          "path": "./output/[[[ANS:project_name]]]/src"
+        },
+        {
+          "type": "execute",
+          "command": "Write-Host 'Project: [[[ANS:project_name]]]' -ForegroundColor Green"
+        },
+        {
+          "type": "execute",
+          "command": "Write-Host 'Features: [[[ANS:features]]]' -ForegroundColor Green"
+        }
+      ]
+    }
+  ]
+}
