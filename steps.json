@@ -18,12 +18,13 @@
             "include": ["./template/**/*.txt"], // Files to replace. Multiple files can be specified. Wildcards supported. Both absolute and relative paths supported.
             "exclude": [] // Optional: Files to exclude. Wildcards supported.
           },
-          "target": "[[[PROJECT_NAME]]]", // String to be replaced. Must be enclosed in [[[]]]
+          "target": "[[[PROJECT_NAME]]]", // String to be replaced. Can also be { "regex": "pattern" } for regex matching, or ["str1", "str2"] for multiple strings (any match).
           "value": "[[[ANS:project_name]]]" // Replacement value. [[[ANS:id]]] references the answer. [[[UUIDv4]]] generates and references a UUIDv4.
         },
         {
           "conditions": [
             // Conditions to execute this action. Multiple conditions can be specified. All conditions must be met.
+            // ans can be: a string, { "regex": "pattern" }, or ["str1", "str2"] (any match). [[[ANS:xxx]]] placeholders are supported.
             { "question_id": "project_name", "ans": { "regex": "^my" } }
           ],
           "type": "execute", // Execute PowerShell command.

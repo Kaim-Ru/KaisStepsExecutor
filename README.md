@@ -73,9 +73,26 @@ Replaces strings in specified files. Supports wildcards.
 }
 ```
 
-- `files`: File patterns to replace (array). Supports wildcards (`*`, `**`). Both absolute and relative paths supported
-- `target`: String to be replaced
+- `files`: File patterns to replace (array or object with `include`/`exclude`). Supports wildcards (`*`, `**`). Both absolute and relative paths supported
+- `target`: String to be replaced. Can also use:
+  - String: `"[[[PROJECT_NAME]]]"` (simple string match)
+  - Regex: `{ "regex": "Project-\\d+" }` (regex pattern match)
+  - Array: `["[[[NAME1]]]", "[[[NAME2]]]"]` (match any of the strings)
 - `value`: Replacement value
+
+**Advanced `files` format:**
+
+```json
+{
+  "type": "replace",
+  "files": {
+    "include": ["./template/**/*.txt"],
+    "exclude": ["./template/test/**"]
+  },
+  "target": "[[[PROJECT_NAME]]]",
+  "value": "[[[ANS:project_name]]]"
+}
+```
 
 #### 3. copy - Copy Files/Folders
 
@@ -128,7 +145,34 @@ If you specify `conditions` for an action, it will only be executed when the con
 
 All conditions must be met (AND condition).
 
+**Advanced condition formats:**
+
+- **String match**: `{ "question_id": "framework", "ans": "React" }`
+- **Regex match**: `{ "question_id": "project_name", "ans": { "regex": "^my-" } }`
+- **Multiple values (any)**: `{ "question_id": "framework", "ans": ["React", "Vue"] }`
+- **With placeholders**: `{ "question_id": "name", "ans": "[[[ANS:prefix]]]_app" }`
+
+```json
+{
+  "conditions": [
+    { "question_id": "project_name", "ans": { "regex": "^my-" } },
+    { "question_id": "framework", "ans": ["React", "Vue", "Angular"] }
+  ],
+  "type": "execute",
+  "command": "npm install"
+}
+```
+
 ## Placeholders
+
+Placeholders work in the following fields:
+
+- `question` (question text)
+- `options` (selection options)
+- `command` (execute command)
+- `target` and `value` (replace action)
+- `source` and `destination` (copy/symlink actions)
+- `ans` in `conditions` (condition values)
 
 ### [[[ANS:question_id]]] - Reference Answer
 

@@ -168,9 +168,27 @@ function Invoke-ReplaceAction {
     
     Write-Host "  [Replace] Replacing strings in files..." -ForegroundColor Cyan
     
-    # Process target and value with placeholder replacement
-    $target = Invoke-Replacement -Text $Action.target -Answers $Answers
+    # Process value with placeholder replacement
     $value = Invoke-Replacement -Text $Action.value -Answers $Answers
+    
+    # Process target (support string, regex object, or array)
+    $targets = @()
+    $isRegex = $false
+    
+    if ($Action.target -is [PSCustomObject] -and $Action.target.regex) {
+        # Regex format
+        $processedRegex = Invoke-Replacement -Text $Action.target.regex -Answers $Answers
+        $targets += $processedRegex
+        $isRegex = $true
+    } elseif ($Action.target -is [array]) {
+        # Array format - process placeholders in each element
+        foreach ($t in $Action.target) {
+            $targets += Invoke-Replacement -Text $t -Answers $Answers
+        }
+    } else {
+        # String format (legacy)
+        $targets += Invoke-Replacement -Text $Action.target -Answers $Answers
+    }
     
     # Process files (support both array and object format)
     $filePatterns = @()
@@ -213,6 +231,40 @@ function Invoke-ReplaceAction {
         return $true
     }
     
+    # Helper function to perform replacement in content
+    $replaceInContent = {
+        param([string]$Content)
+        
+        $newContent = $Content
+        $hasMatch = $false
+        
+        if ($isRegex) {
+            # Regex replacement
+            foreach ($target in $targets) {
+                if ($newContent -match $target) {
+                    $hasMatch = $true
+                    $newContent = $newContent -replace $target, $value
+                }
+            }
+        } else {
+            # String replacement (for each target in array or single target)
+            foreach ($target in $targets) {
+                if ($newContent.Contains($target)) {
+                    $hasMatch = $true
+                    $newContent = $newContent.Replace($target, $value)
+                }
+            }
+        }
+        
+        if ($hasMatch) {
+            # Process any remaining placeholders (like UUIDv4) in the content
+            $newContent = Invoke-Replacement -Text $newContent -Answers $Answers
+            return @{ Success = $true; Content = $newContent }
+        }
+        
+        return @{ Success = $false; Content = $null }
+    }
+    
     $filesProcessed = 0
     
     foreach ($filePattern in $filePatterns) {
@@ -249,13 +301,13 @@ function Invoke-ReplaceAction {
                         & $shouldProcessFile $_.FullName
                     } | ForEach-Object {
                         $content = Get-Content -Path $_.FullName -Raw -Encoding UTF8
-                        if ($content -and $content.Contains($target)) {
-                            $newContent = $content.Replace($target, $value)
-                            # Process any remaining placeholders (like UUIDv4) in the content
-                            $newContent = Invoke-Replacement -Text $newContent -Answers $Answers
-                            Set-Content -Path $_.FullName -Value $newContent -Encoding UTF8 -NoNewline
-                            Write-Host "    ✓ $($_.FullName)" -ForegroundColor Green
-                            $filesProcessed++
+                        if ($content) {
+                            $result = & $replaceInContent $content
+                            if ($result.Success) {
+                                Set-Content -Path $_.FullName -Value $result.Content -Encoding UTF8 -NoNewline
+                                Write-Host "    ✓ $($_.FullName)" -ForegroundColor Green
+                                $filesProcessed++
+                            }
                         }
                     }
                 }
@@ -264,13 +316,13 @@ function Invoke-ReplaceAction {
                     & $shouldProcessFile $_.FullName
                 } | ForEach-Object {
                     $content = Get-Content -Path $_.FullName -Raw -Encoding UTF8
-                    if ($content -and $content.Contains($target)) {
-                        $newContent = $content.Replace($target, $value)
-                        # Process any remaining placeholders (like UUIDv4) in the content
-                        $newContent = Invoke-Replacement -Text $newContent -Answers $Answers
-                        Set-Content -Path $_.FullName -Value $newContent -Encoding UTF8 -NoNewline
-                        Write-Host "    ✓ $($_.FullName)" -ForegroundColor Green
-                        $filesProcessed++
+                    if ($content) {
+                        $result = & $replaceInContent $content
+                        if ($result.Success) {
+                            Set-Content -Path $_.FullName -Value $result.Content -Encoding UTF8 -NoNewline
+                            Write-Host "    ✓ $($_.FullName)" -ForegroundColor Green
+                            $filesProcessed++
+                        }
                     }
                 }
             }
@@ -278,13 +330,13 @@ function Invoke-ReplaceAction {
             # Direct file path
             if ((Test-Path $resolvedPath) -and (& $shouldProcessFile $resolvedPath)) {
                 $content = Get-Content -Path $resolvedPath -Raw -Encoding UTF8
-                if ($content -and $content.Contains($target)) {
-                    $newContent = $content.Replace($target, $value)
-                    # Process any remaining placeholders (like UUIDv4) in the content
-                    $newContent = Invoke-Replacement -Text $newContent -Answers $Answers
-                    Set-Content -Path $resolvedPath -Value $newContent -Encoding UTF8 -NoNewline
-                    Write-Host "    ✓ $resolvedPath" -ForegroundColor Green
-                    $filesProcessed++
+                if ($content) {
+                    $result = & $replaceInContent $content
+                    if ($result.Success) {
+                        Set-Content -Path $resolvedPath -Value $result.Content -Encoding UTF8 -NoNewline
+                        Write-Host "    ✓ $resolvedPath" -ForegroundColor Green
+                        $filesProcessed++
+                    }
                 }
             } else {
                 if (-not (Test-Path $resolvedPath)) {
