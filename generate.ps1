@@ -332,6 +332,15 @@ try {
         # Ask question if question_id exists
         if ($step.question_id) {
             $stepType = if ($step.type) { $step.type } else { "input" }
+            
+            # Validate step type
+            $validStepTypes = @("input", "select")
+            if ($step.type -and $stepType -notin $validStepTypes) {
+                Write-Host "  [Warning] Invalid question type: '$stepType'. Valid types are: $($validStepTypes -join ', ')" -ForegroundColor Yellow
+                Write-Host "  Using 'input' as default." -ForegroundColor Yellow
+                $stepType = "input"
+            }
+            
             $options = if ($step.options) { $step.options } else { @() }
             
             $answer = Get-UserInput -Question $step.question -Type $stepType -Options $options
@@ -349,6 +358,17 @@ try {
                     continue
                 }
                 
+                # Validate action type
+                $validActionTypes = @("execute", "replace", "copy", "symlink")
+                if (-not $action.type) {
+                    Write-Host "  [Warning] Action type is missing" -ForegroundColor Yellow
+                    continue
+                }
+                if ($action.type -notin $validActionTypes) {
+                    Write-Host "  [Warning] Unknown action type: '$($action.type)'. Valid types are: $($validActionTypes -join ', ')" -ForegroundColor Yellow
+                    continue
+                }
+                
                 # Execute action based on type
                 switch ($action.type) {
                     "execute" {
@@ -362,9 +382,6 @@ try {
                     }
                     "symlink" {
                         Invoke-SymlinkAction -Action $action -Answers $answers
-                    }
-                    default {
-                        Write-Host "  [Warning] Unknown action type: $($action.type)" -ForegroundColor Yellow
                     }
                 }
             }

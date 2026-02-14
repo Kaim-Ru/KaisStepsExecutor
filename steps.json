@@ -13,7 +13,7 @@
     {
       "question_id": "framework",
       "question": "Which framework do you want to use?",
-      "type": "selecta",
+      "type": "select",
       "options": ["React", "Vue", "Angular"]
     },
     {
