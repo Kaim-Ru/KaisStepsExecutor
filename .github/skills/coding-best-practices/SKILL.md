@@ -836,12 +836,3 @@ function Invoke-BackupAction {
     }
 }
 ```
-
----
-
-## Related Skills
-
-- [Extending Input Types](../extending-input-types/SKILL.md) - Create custom input hooks
-- [Extending Action Types](../extending-action-types/SKILL.md) - Create custom action hooks
-- [Working with Placeholders](../working-with-placeholders/SKILL.md) - Process placeholders
-- [Debugging and Testing](../debugging-and-testing/SKILL.md) - Test your code

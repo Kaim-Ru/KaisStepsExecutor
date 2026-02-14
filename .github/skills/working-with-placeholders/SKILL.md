@@ -692,11 +692,3 @@ Write-Host "Result: $result"
 6. ✅ Handle errors gracefully in custom placeholder implementations
 7. ✅ Use `[regex]::Escape()` when replacing with user input
 8. ✅ Test all placeholder combinations in your workflows
-
----
-
-## Related Skills
-
-- [Understanding steps.json](../understanding-steps-json/SKILL.md) - Learn where placeholders work
-- [Creating Workflows](../creating-workflows/SKILL.md) - Use placeholders in workflows
-- [Coding Best Practices](../coding-best-practices/SKILL.md) - PowerShell coding conventions

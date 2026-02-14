@@ -789,11 +789,3 @@ Write-Host "Duration: $($duration.TotalMilliseconds) ms" -ForegroundColor Gray
 3. ✅ Test with simpler configurations
 4. ✅ Add logging to understand execution flow
 5. ✅ Compare with working examples
-
----
-
-## Related Skills
-
-- [Understanding steps.json](../understanding-steps-json/SKILL.md) - Learn configuration structure
-- [Creating Workflows](../creating-workflows/SKILL.md) - Design effective workflows
-- [Coding Best Practices](../coding-best-practices/SKILL.md) - Follow coding standards

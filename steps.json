@@ -1,45 +1,58 @@
 {
   "steps": [
     {
-      "question_id": "framework",
-      "question": "Which framework do you want to use?",
+      "question_id": "greeting",
+      "question": "Hello there! Welcome to the project generator. How are you feeling today?",
       "input_type": "select",
-      "options": ["React", "Vue", "Angular"]
+      "options": ["Happy", "Excited", "Curious", "Tired", "Confused"]
     },
     {
-      "question_id": "project_name", // Question ID. Used to reference the answer.
-      "question": "Please enter the project name", // Question text
-      "input_type": "input", // Question type. "input" for text input, "select" for selection.
+      "question_id": "project_name",
+      "question": "Please enter the project name",
+      "input_type": "input",
       "actions": [
-        // All actions below. Executed from top to bottom.
         {
-          "type": "replace", // Replace target with value.
-          "files": {
-            "include": ["./template/**/*.txt"], // Files to replace. Multiple files can be specified. Wildcards supported. Both absolute and relative paths supported.
-            "exclude": [] // Optional: Files to exclude. Wildcards supported.
-          },
-          "target": "[[[PROJECT_NAME]]]", // String to be replaced. Can also be { "regex": "pattern" } for regex matching, or ["str1", "str2"] for multiple strings (any match).
-          "value": "[[[ANS:project_name]]]" // Replacement value. [[[ANS:id]]] references the answer. [[[UUIDv4]]] generates and references a UUIDv4.
+          "type": "copy",
+          "source": "./templates/feeling.txt",
+          "destination": "./out/[[[ANS:project_name]]]/feeling.txt"
         },
+        {
+          "type": "replace",
+          "files": {
+            "include": ["./out/[[[ANS:project_name]]]/**/*.txt"],
+            "exclude": []
+          },
+          "target": "[[[PROJECT_NAME]]]",
+          "value": "[[[ANS:project_name]]]"
+        },
+        {
+          "type": "replace",
+          "files": {
+            "include": ["./out/[[[ANS:project_name]]]/**/*.txt"],
+            "exclude": []
+          },
+          "target": "[[[Feeling]]]",
+          "value": "[[[ANS:greeting]]]"
+        },
+        {
+          "type": "replace",
+          "files": {
+            "include": ["./out/[[[ANS:project_name]]]/**/*.txt"],
+            "exclude": []
+          },
+          "target": "[[[UUID]]]",
+          "value": "[[[UUIDv4]]]"
+        }
+      ]
+    },
+    {
+      "actions": [
         {
           "conditions": [
-            // Conditions to execute this action. Multiple conditions can be specified. All conditions must be met.
-            // ans can be: a string, { "regex": "pattern" }, or ["str1", "str2"] (any match). [[[ANS:xxx]]] placeholders are supported.
-            { "question_id": "project_name", "ans": { "regex": "^my" } }
+            { "question_id": "project_name", "ans": { "regex": "^test" } }
           ],
-          "type": "execute", // Execute PowerShell command.
-          "command": "Write-Host 'Project name is [[[ANS:project_name]]]'" // Command content. [[[ANS:project_name]]] will be replaced.
-          // Escaping like \\[[[ANS:project_name]]] is possible. In JSON, backslashes must also be escaped, so write \\[[[ANS:project_name]]]. Writing \[[[ANS:project_name]]] will leave [[[ANS:project_name]]] unchanged after replacement.
-        },
-        {
-          "type": "copy", // Copy file or folder.
-          "source": "D:/AddonDevelopment/psteset12/template/aaa", // Source file or folder. Both absolute and relative paths supported.
-          "destination": "./my_aaa" // Destination file or folder name. If ends with /, copies into that directory. Otherwise, copies with this exact name.
-        },
-        {
-          "type": "symlink", // Create symbolic link.
-          "source": "./template/bbb", // Link source file or folder. Both absolute and relative paths supported.
-          "destination": "./my_bbb" // Link destination name. If ends with /, creates link inside that directory. Otherwise, creates link with this exact name.
+          "type": "execute",
+          "command": "Write-Host 'Project name is [[[ANS:project_name]]]. Have a nice day!'"
         }
       ]
     }

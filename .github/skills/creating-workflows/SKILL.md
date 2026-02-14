@@ -751,11 +751,3 @@ This is usually correct - conditions check the raw answer value, not the process
 8. ✅ Validate user input with conditions
 9. ✅ Provide feedback with execute actions
 10. ✅ Keep workflows simple and maintainable
-
----
-
-## Related Skills
-
-- [Understanding steps.json](../understanding-steps-json/SKILL.md) - Learn the JSON schema
-- [Working with Placeholders](../working-with-placeholders/SKILL.md) - Master placeholders
-- [Debugging and Testing](../debugging-and-testing/SKILL.md) - Test and debug workflows

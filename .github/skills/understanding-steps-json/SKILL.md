@@ -592,11 +592,3 @@ For `copy` and `symlink` actions:
 6. **Use exclude patterns**: Filter out `node_modules`, `.git`, etc. in replace actions
 7. **Provide clear question text**: Users should understand what's being asked
 8. **Use meaningful options**: "Yes, use TypeScript" instead of just "Yes"
-
----
-
-## Related Skills
-
-- [Creating Workflows](../creating-workflows/SKILL.md) - Design effective workflows
-- [Working with Placeholders](../working-with-placeholders/SKILL.md) - Master placeholder system
-- [Debugging and Testing](../debugging-and-testing/SKILL.md) - Test and debug configurations

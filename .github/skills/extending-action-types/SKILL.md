@@ -843,12 +843,3 @@ function Invoke-SendemailAction {
   "port": 587
 }
 ```
-
----
-
-## Related Skills
-
-- [Understanding steps.json](../understanding-steps-json/SKILL.md) - Learn action type usage
-- [Working with Placeholders](../working-with-placeholders/SKILL.md) - Process properties
-- [Coding Best Practices](../coding-best-practices/SKILL.md) - Follow coding standards
-- [Debugging and Testing](../debugging-and-testing/SKILL.md) - Test your hooks

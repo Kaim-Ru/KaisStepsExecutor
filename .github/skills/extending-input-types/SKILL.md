@@ -700,11 +700,3 @@ function Get-UserInput {
   ]
 }
 ```
-
----
-
-## Related Skills
-
-- [Understanding steps.json](../understanding-steps-json/SKILL.md) - Learn input type usage
-- [Coding Best Practices](../coding-best-practices/SKILL.md) - Follow coding standards
-- [Debugging and Testing](../debugging-and-testing/SKILL.md) - Test your hooks

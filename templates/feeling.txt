@@ -1,0 +1,3 @@
+Project name: [[[PROJECT_NAME]]]
+Today's UUID: [[[UUID]]]
+Feeling: [[[Feeling]]]
