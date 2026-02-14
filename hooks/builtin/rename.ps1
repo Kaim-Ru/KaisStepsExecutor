@@ -10,30 +10,40 @@ function Invoke-RenameAction {
     
     Write-Host "  [Rename] Renaming files by replacing target string..." -ForegroundColor Cyan
     
-    # Process target without placeholder replacement (literal string match)
     # Process value with placeholder replacement
-    $target = $Action.target
     $value = Invoke-Replacement -Text $Action.value -Answers $Answers
     
-    # Process files (support both array and object format)
+    # Process target (support string, regex object, or array)
+    $targets = @()
+    $isRegex = $false
+    
+    if ($Action.target -is [PSCustomObject] -and $Action.target.regex) {
+        # Regex format
+        $targets += $Action.target.regex
+        $isRegex = $true
+    } elseif ($Action.target -is [array]) {
+        # Array format
+        foreach ($t in $Action.target) {
+            $targets += $t
+        }
+    } else {
+        # String format (literal)
+        $targets += $Action.target
+    }
+    
+    # Process files (object format with include/exclude)
     $filePatterns = @()
     $excludePatterns = @()
     
-    if ($Action.files -is [array]) {
-        # Legacy array format
-        $filePatterns = $Action.files
-    } elseif ($Action.files -is [PSCustomObject] -or $Action.files -is [hashtable]) {
-        # New object format
-        if ($Action.files.include) {
-            foreach ($pattern in $Action.files.include) {
-                $filePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
-            }
+    if ($Action.files.include) {
+        foreach ($pattern in $Action.files.include) {
+            $filePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
         }
-        
-        if ($Action.files.exclude) {
-            foreach ($pattern in $Action.files.exclude) {
-                $excludePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
-            }
+    }
+    
+    if ($Action.files.exclude) {
+        foreach ($pattern in $Action.files.exclude) {
+            $excludePatterns += Invoke-Replacement -Text $pattern -Answers $Answers
         }
     }
     
@@ -111,13 +121,30 @@ function Invoke-RenameAction {
         $originalPath = $file.FullName
         $parentDir = $file.DirectoryName
         
-        # Check if filename contains the target string
-        if ($originalName.Contains($target)) {
-            # Replace target with value in filename
-            $newName = $originalName -replace [regex]::Escape($target), $value
+        # Try each target pattern until one matches
+        $matches = $false
+        $newName = ""
+        
+        foreach ($target in $targets) {
+            if ($isRegex) {
+                # Regex mode: check if pattern matches
+                if ($originalName -match $target) {
+                    $matches = $true
+                    $newName = $originalName -replace $target, $value
+                    break
+                }
+            } else {
+                # Literal mode: check if target string exists
+                if ($originalName.Contains($target)) {
+                    $matches = $true
+                    $newName = $originalName -replace [regex]::Escape($target), $value
+                    break
+                }
+            }
+        }
+        
+        if ($matches) {
             $newPath = Join-Path $parentDir $newName
-            
-            # Skip if name hasn't changed
             if ($newName -eq $originalName) {
                 Write-Host "    ℹ Skipped (no change): $originalName" -ForegroundColor Yellow
                 $skippedCount++
