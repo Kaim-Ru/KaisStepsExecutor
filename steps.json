@@ -13,13 +13,13 @@
     {
       "question_id": "framework",
       "question": "Which framework do you want to use?",
-      "type": "select",
+      "input_type": "select",
       "options": ["React", "Vue", "Angular"]
     },
     {
       "question_id": "project_name", // Question ID. Used to reference the answer.
       "question": "Please enter the project name", // Question text
-      "type": "input", // Question type. "input" for text input, "select" for selection.
+      "input_type": "input", // Question type. "input" for text input, "select" for selection.
       "actions": [
         // All actions below. Executed from top to bottom.
         {
@@ -31,7 +31,7 @@
         {
           "conditions": [
             // Conditions to execute this action. Multiple conditions can be specified. All conditions must be met.
-            { "question_id": "project_name", "ans": "Yeah" }
+            { "question_id": "project_name", "ans": ["Yeah", "aba"] }
           ],
           "type": "execute", // Execute PowerShell command.
           "command": "Write-Host 'Project name is [[[ANS:project_name]]]'" // Command content. [[[ANS:project_name]]] will be replaced.

@@ -47,8 +47,24 @@ function Test-Conditions {
         $questionId = $condition.question_id
         $expectedAns = $condition.ans
         
-        if ($Answers[$questionId] -ne $expectedAns) {
-            return $false
+        # Check if expectedAns is an array
+        if ($expectedAns -is [array]) {
+            # If it's an array, check if the answer matches any of the values
+            $match = $false
+            foreach ($value in $expectedAns) {
+                if ($Answers[$questionId] -eq $value) {
+                    $match = $true
+                    break
+                }
+            }
+            if (-not $match) {
+                return $false
+            }
+        } else {
+            # Single value comparison
+            if ($Answers[$questionId] -ne $expectedAns) {
+                return $false
+            }
         }
     }
     
@@ -331,11 +347,11 @@ try {
         
         # Ask question if question_id exists
         if ($step.question_id) {
-            $stepType = if ($step.type) { $step.type } else { "input" }
+            $stepType = if ($step.input_type) { $step.input_type } else { "input" }
             
             # Validate step type
             $validStepTypes = @("input", "select")
-            if ($step.type -and $stepType -notin $validStepTypes) {
+            if ($step.input_type -and $stepType -notin $validStepTypes) {
                 Write-Host "  [Warning] Invalid question type: '$stepType'. Valid types are: $($validStepTypes -join ', ')" -ForegroundColor Yellow
                 Write-Host "  Using 'input' as default." -ForegroundColor Yellow
                 $stepType = "input"
