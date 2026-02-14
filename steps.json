@@ -11,6 +11,12 @@
       ]
     },
     {
+      "question_id": "framework",
+      "question": "Which framework do you want to use?",
+      "type": "selecta",
+      "options": ["React", "Vue", "Angular"]
+    },
+    {
       "question_id": "project_name", // Question ID. Used to reference the answer.
       "question": "Please enter the project name", // Question text
       "type": "input", // Question type. "input" for text input, "select" for selection.
@@ -33,12 +39,12 @@
         },
         {
           "type": "copy", // Copy file or folder.
-          "source": "./template/README.txt", // Source file or folder. Both absolute and relative paths supported.
+          "source": "D:/AddonDevelopment/psteset12/template/aaa", // Source file or folder. Both absolute and relative paths supported.
           "destination": "./" // Destination folder. Both absolute and relative paths supported.
         },
         {
           "type": "symlink", // Create symbolic link.
-          "source": "./template/config.txt", // Link source file or folder. Both absolute and relative paths supported.
+          "source": "./template/bbb", // Link source file or folder. Both absolute and relative paths supported.
           "destination": "./" // Link destination file or folder. Both absolute and relative paths supported.
         }
       ]

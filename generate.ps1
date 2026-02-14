@@ -248,6 +248,13 @@ function Invoke-CopyAction {
         throw "Copy source not found: $source"
     }
     
+    # If source is a directory and destination is also a directory,
+    # copy the folder itself (not just its contents)
+    if ((Test-Path $source -PathType Container) -and (Test-Path $destination -PathType Container)) {
+        $folderName = Split-Path -Leaf $source
+        $destination = Join-Path $destination $folderName
+    }
+    
     try {
         Copy-DirectoryRecursive -Source $source -Destination $destination
         Write-Host "    ✓ $source -> $destination" -ForegroundColor Green
