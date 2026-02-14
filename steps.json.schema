@@ -1,0 +1,314 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Project Setup Steps Configuration",
+  "description": "Configuration file for interactive project setup automation tool",
+  "type": "object",
+  "required": ["steps"],
+  "properties": {
+    "steps": {
+      "type": "array",
+      "description": "Array of steps to execute sequentially",
+      "items": {
+        "$ref": "#/definitions/step"
+      }
+    }
+  },
+  "definitions": {
+    "step": {
+      "type": "object",
+      "description": "A single step in the workflow, optionally asking a question and executing actions",
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "description": "Unique identifier for the question. Used to reference answers with [[[ANS:question_id]]] placeholder",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        },
+        "question": {
+          "type": "string",
+          "description": "Question text to display to the user"
+        },
+        "input_type": {
+          "type": "string",
+          "description": "Type of input to get from the user",
+          "enum": ["input", "select", "multiselect"],
+          "default": "input"
+        },
+        "options": {
+          "type": "array",
+          "description": "Array of choices for select/multiselect input types",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "actions": {
+          "type": "array",
+          "description": "Array of actions to execute for this step",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/executeAction" },
+              { "$ref": "#/definitions/replaceAction" },
+              { "$ref": "#/definitions/copyAction" },
+              { "$ref": "#/definitions/symlinkAction" },
+              { "$ref": "#/definitions/mkdirAction" }
+            ]
+          }
+        }
+      },
+      "dependencies": {
+        "options": {
+          "properties": {
+            "input_type": {
+              "enum": ["select", "multiselect"]
+            }
+          },
+          "required": ["input_type"]
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "description": "Condition to check before executing an action. All conditions must be met (AND logic)",
+      "required": ["question_id", "ans"],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "description": "The question_id to check the answer for"
+        },
+        "ans": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Exact string match or placeholder reference"
+            },
+            {
+              "type": "object",
+              "description": "Regex pattern match",
+              "required": ["regex"],
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Regular expression pattern to match against the answer"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "description": "Contains match (alias for regex)",
+              "required": ["contains"],
+              "properties": {
+                "contains": {
+                  "type": "string",
+                  "description": "String that should be contained in the answer"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "description": "Equals match (explicit exact match)",
+              "required": ["equals"],
+              "properties": {
+                "equals": {
+                  "type": "string",
+                  "description": "Exact string that the answer should equal"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "array",
+              "description": "Match any of the strings in the array (OR logic)",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ]
+        }
+      }
+    },
+    "executeAction": {
+      "type": "object",
+      "description": "Execute a PowerShell command",
+      "required": ["type", "command"],
+      "properties": {
+        "type": {
+          "const": "execute"
+        },
+        "command": {
+          "type": "string",
+          "description": "PowerShell command to execute. Supports placeholders like [[[ANS:question_id]]] and [[[UUIDv4]]]"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "replaceAction": {
+      "type": "object",
+      "description": "Replace strings in files matching the pattern",
+      "required": ["type", "files", "target", "value"],
+      "properties": {
+        "type": {
+          "const": "replace"
+        },
+        "files": {
+          "oneOf": [
+            {
+              "type": "array",
+              "description": "Array of glob patterns for files to process",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            {
+              "type": "object",
+              "description": "File patterns with include and exclude lists",
+              "required": ["include"],
+              "properties": {
+                "include": {
+                  "type": "array",
+                  "description": "Glob patterns for files to include",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                },
+                "exclude": {
+                  "type": "array",
+                  "description": "Glob patterns for files to exclude",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Exact string to replace"
+            },
+            {
+              "type": "object",
+              "description": "Regex pattern to match",
+              "required": ["regex"],
+              "properties": {
+                "regex": {
+                  "type": "string",
+                  "description": "Regular expression pattern to match"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "array",
+              "description": "Array of strings to replace (matches any)",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ]
+        },
+        "value": {
+          "type": "string",
+          "description": "Replacement string. Supports placeholders like [[[ANS:question_id]]] and [[[UUIDv4]]]"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "copyAction": {
+      "type": "object",
+      "description": "Copy files or folders from source to destination",
+      "required": ["type", "source", "destination"],
+      "properties": {
+        "type": {
+          "const": "copy"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source file or folder path (absolute or relative). Supports placeholders"
+        },
+        "destination": {
+          "type": "string",
+          "description": "Destination path (absolute or relative). If ends with / or \\, source is copied into that directory. Supports placeholders"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "symlinkAction": {
+      "type": "object",
+      "description": "Create a symbolic link. Requires administrator privileges on Windows",
+      "required": ["type", "source", "destination"],
+      "properties": {
+        "type": {
+          "const": "symlink"
+        },
+        "source": {
+          "type": "string",
+          "description": "Target file or folder path (absolute or relative). Supports placeholders"
+        },
+        "destination": {
+          "type": "string",
+          "description": "Link path (absolute or relative). If ends with / or \\, link is created inside that directory. Supports placeholders"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "mkdirAction": {
+      "type": "object",
+      "description": "Create a directory (and parent directories if needed)",
+      "required": ["type", "path"],
+      "properties": {
+        "type": {
+          "const": "mkdir"
+        },
+        "path": {
+          "type": "string",
+          "description": "Directory path to create (absolute or relative). Supports placeholders"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions to check before executing this action",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

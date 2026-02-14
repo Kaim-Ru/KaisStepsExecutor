@@ -1,4 +1,5 @@
 {
+  "$schema": "./steps.json.schema",
   "steps": [
     {
       "question_id": "greeting",

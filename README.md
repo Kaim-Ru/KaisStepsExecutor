@@ -4,6 +4,14 @@
 
 An interactive PowerShell automation tool that executes workflows defined in JSON. Supports questions, conditional actions, file operations, and extensible hooks.
 
+## Features ✨
+
+- **Interactive Project Setup Automation** - Ask users questions and automatically configure projects based on their answers
+- **Clear, Declarative steps.json** - Define workflows intuitively with JSON-based configuration
+- **Schema Validation** - Validate configuration files with steps.json.schema
+- **Agent Skills & AGENTS.md** - Built-in documentation for AI agents to support extensibility
+- **Clean PowerShell Environment** - No additional runtimes or package managers required
+
 ## Usage
 
 ```powershell
