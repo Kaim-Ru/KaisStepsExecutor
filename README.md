@@ -150,21 +150,20 @@ Placeholders work in: `question`, `options`, `command`, `target`, `value`, `sour
 {
   "steps": [
     {
-      "question_id": "name",
+      "question_id": "project_name",
       "question": "Project name?",
       "input_type": "input",
       "actions": [
-        { "type": "mkdir", "path": "./[[[ANS:name]]]" },
-        {
-          "type": "replace",
-          "files": ["./template/**"],
-          "target": "[[[NAME]]]",
-          "value": "[[[ANS:name]]]"
-        },
         {
           "type": "copy",
           "source": "./template",
-          "destination": "./[[[ANS:name]]]/"
+          "destination": "./out/[[[ANS:name]]]"
+        },
+        {
+          "type": "replace",
+          "files": ["./out/[[[ANS:name]]]"],
+          "target": "[[[NAME]]]",
+          "value": "[[[ANS:project_name]]]"
         }
       ]
     },
@@ -223,5 +222,6 @@ For developers and AI agents, see [AGENTS.md](AGENTS.md) for architecture, codin
 ## License
 
 MIT
+
 
 
