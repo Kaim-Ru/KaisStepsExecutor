@@ -15,7 +15,6 @@ An interactive PowerShell automation tool that executes workflows defined in JSO
 ## Usage
 
 ```powershell
-.\generator.ps1                           # Use default steps.json
 .\generator.ps1 -StepPath "custom.json"  # Use custom config
 ```
 
@@ -224,4 +223,5 @@ For developers and AI agents, see [AGENTS.md](AGENTS.md) for architecture, codin
 ## License
 
 MIT
+
 
