@@ -47,8 +47,16 @@ function Test-Conditions {
         $questionId = $condition.question_id
         $expectedAns = $condition.ans
         
+        # Check if expectedAns is a regex object
+        if ($expectedAns -is [PSCustomObject] -and $expectedAns.regex) {
+            # Regex matching
+            $userAnswer = $Answers[$questionId]
+            if (-not ($userAnswer -match $expectedAns.regex)) {
+                return $false
+            }
+        }
         # Check if expectedAns is an array
-        if ($expectedAns -is [array]) {
+        elseif ($expectedAns -is [array]) {
             # If it's an array, check if the answer matches any of the values
             $match = $false
             foreach ($value in $expectedAns) {
